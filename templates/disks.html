@@ -1,0 +1,56 @@
+{% extends 'home.html' %}
+
+{% block content %}
+
+<h1>Disks</h1>
+{% if disks %}
+
+<ul>
+    {% for disk in disks %}
+    <li><a href="/disks/{{ disk.id }}">{{ disk.name }}</a> - {{ disk.size }} MB
+        <a href="disks/{{disk.id}}/umount">unmount</a>
+        <a href="disks/{{disk.id}}/format">format</a>
+        <a href="disks/{{disk.id}}/wipefs">wipefs</a>
+    </li>
+    {% endfor %}
+</ul>
+<form id="add-disk-form">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name">
+    <br>
+    <label for="size">Size:</label>
+    <input type="text" id="size" name="size">
+    <br>
+    <button type="submit">Mount new disk</button>
+</form>
+{% else %}
+<p>No disks found.</p>
+{% endif %}
+
+<script>
+    const addDiskForm = document.querySelector('#add-disk-form');
+    addDiskForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.querySelector('#name').value;
+        const size = document.querySelector('#size').value;
+
+        const token = localStorage.getItem('access_token');
+        const headers = {'Authorization': `Bearer ${token}`};
+        const body = JSON.stringify({'name': name, 'size': size});
+
+        const response = await fetch('/disks/new/', {
+            method: 'POST',
+            headers: headers,
+            body: body
+        });
+
+        // if (response.ok) {
+        //     // Редирект на страницу дисков или обновление списка дисков на текущей странице
+        //     window.location.href = '/disks';
+        // } else {
+        //     // Обработка ошибки
+        // }
+    });
+</script>
+
+{% endblock %}

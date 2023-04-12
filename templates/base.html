@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% block title %}{% endblock %} - AeroDisk</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    {% if access_token %}
+    <script>
+        localStorage.setItem('access_token', '{{ access_token }}');
+        const headers = new Headers();
+        headers.append('Authorization', 'Bearer ' + localStorage.getItem('access_token'));
+    </script>
+    {% endif %}
+</head>
+<body>
+<header>
+    <nav>
+        <ul>
+            <li><a href="/">Home</a></li>
+            {% if access_token %}
+            <li><a href="auth/profile">Profile</a></li>
+            <li><a href="auth/logout">Logout</a></li>
+            {% else %}
+            <li><a href="/auth/register">Register</a></li>
+            <li><a href="/auth/login">Login</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</header>
+<main>
+    {% block content %}
+    {% endblock %}
+
+    {% block scripts %}
+    <script>
+        console.log(2)
+        const openDisks = document.querySelector('#disks');
+        openDisks.addEventListener('click', async () => {
+            const token = localStorage.getItem('access_token');
+            const headers = {'Authorization': `Bearer ${token}`};
+            console.log(headers)
+            const response = await fetch('/disks', {
+                method: 'GET',
+                headers: headers
+            });
+
+            if (response.ok) {
+                // Редирект на страницу дисков
+                const token = localStorage.getItem('access_token');
+                console.log(token);
+                Object.assign(headers, {'Authorization': `Bearer ${token}`});
+                window.location.href = '/disks';
+            } else {
+                // Обработка ошибки
+                console.log("error")
+            }
+        });
+    </script>
+    {% endblock %}
+</main>
+<footer>
+    <p>&copy; AeroDisk</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,11 @@
+.dockerignore
+.git
+.idea
+__pycache__
+alembic/versions/*
+data/pg_data/*
+logs/*
+app/__pycache__/*
+pyproject.toml
+poetry.lock
+test_main.http

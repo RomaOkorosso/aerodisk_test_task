@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block content %}
+
+<h1>Welcome to AeroDisk!</h1>
+{% if username %}
+<p>You are currently logged in as {{ username }}.</p>
+<button id="disks" type="button">Go to disks</button>
+{% endif %}
+{% endblock %}
+

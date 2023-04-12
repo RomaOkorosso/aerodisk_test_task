@@ -1,0 +1,54 @@
+{% extends 'home.html' %}
+
+{% block content %}
+{% if message %}
+<p>{{ message }}</p>
+{% endif %}
+<br>
+<h1>{{ disk.name }}</h1>
+<p>Size: {{ disk.size }}</p>
+
+<form onsubmit="updateDisk(event)">
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" value="{{ disk.name }}">
+    <br>
+    <label for="size">Size:</label>
+    <input type="text" id="size" name="size" value="{{ disk.size }}">
+    <br>
+    <input type="submit" value="Update Disk">
+</form>
+
+<script>
+    function updateDisk(event) {
+        event.preventDefault();
+        const name = document.getElementById("name").value;
+        const size = document.getElementById("size").value;
+        const diskId = {
+        {
+            disk.id
+        }
+    }
+        ;
+
+        fetch(`/disks/${diskId}/update`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+            },
+            body: JSON.stringify({name: name, size: size})
+        })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = `/disks/${diskId}`;
+                } else {
+                    throw new Error("Failed to update disk");
+                }
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
+</script>
+
+{% endblock %}
