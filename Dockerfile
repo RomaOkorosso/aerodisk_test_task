@@ -1,29 +1,28 @@
-# Установить базовый образ
-FROM python:3.9-slim-buster
+FROM python:3.10
 
-# Установить директорию приложения
 WORKDIR /app
 
-# Копировать файлы приложения и poetry.lock/pyproject.toml
-COPY ./app /app
-COPY poetry.lock pyproject.toml /app/
+RUN apt update && apt install netcat postgresql-client dnsutils -y
 
-# Установить зависимости с помощью Poetry
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y \
-        curl \
-        build-essential && \
-    curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python && \
-    /root/.poetry/bin/poetry install --no-dev && \
-    apt-get remove -y --auto-remove curl build-essential && \
-    rm -rf /var/lib/apt/lists/*
+RUN pip install --upgrade pip
 
-# Открыть порт из .env для трафика
-ENV PORT=PORT
-EXPOSE $PORT
+RUN pip install poetry
 
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY ./pyproject.toml ./poetry.lock* /app/
+
+RUN poetry config virtualenvs.create false --local
+RUN poetry config virtualenvs.create false
+RUN poetry config virtualenvs.in-project false --local
+RUN poetry update --no-dev
+
+COPY . .
+
+EXPOSE ${APP_PORT}
+
+COPY ./entrypoint.sh /app/
+
+RUN ["chmod", "+x", "/app/entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Запустить сервер с приложением
-CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:80", "--reload"]
+CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--reload"]

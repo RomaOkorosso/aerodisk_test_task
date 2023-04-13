@@ -6,10 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from typing import List, Union
-import shutil
 import os
 import subprocess
-import wmi
 
 from app.src.auth.service import auth_service
 from app.src.base import get_session
@@ -23,33 +21,21 @@ templates = Jinja2Templates(directory="templates")
 
 async def get_disks() -> list[dict[str, Union[int, str]]]:
     disks = []
-    if os.name == "nt":
-        c = wmi.WMI()
-        for disk in c.Win32_LogicalDisk():
+    with open("/proc/mounts", "r") as mounts:
+        for line in mounts:
+            parts = line.strip().split()
+            if parts[2] == "ext4" and "/dev/" in parts[0]:
+                cmd = ["df", "-h", parts[1]]
+            output = subprocess.check_output(cmd).decode().strip().split("\n")[1]
+            parts = output.split()
             disks.append(
                 {
-                    "name": disk.Caption,
-                    "size": int(int(disk.Size) / 1024),  # convert bytes to MB
-                    "filesystem": disk.FileSystem,
-                    "mountpoint": disk.DeviceID,
+                    "name": parts[0],
+                    "size": int(parts[1].replace("G", "")),  # remove 'G' from size
+                    "filesystem": parts[2],
+                    "mountpoint": parts[5],
                 }
             )
-    else:
-        with open("/proc/mounts", "r") as mounts:
-            for line in mounts:
-                parts = line.strip().split()
-                if parts[2] == "ext4" and "/dev/" in parts[0]:
-                    cmd = ["df", "-h", parts[1]]
-                output = subprocess.check_output(cmd).decode().strip().split("\n")[1]
-                parts = output.split()
-                disks.append(
-                    {
-                        "name": parts[0],
-                        "size": int(parts[1].replace("G", "")),  # remove 'G' from size
-                        "filesystem": parts[2],
-                        "mountpoint": parts[5],
-                    }
-                )
     return disks
 
 
