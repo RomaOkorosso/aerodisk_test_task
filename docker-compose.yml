@@ -11,7 +11,6 @@ services:
       - .env
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
-    command: sh -c "gunicorn app.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:80 --reload"
 
   db:
     image: postgres:13.4-alpine

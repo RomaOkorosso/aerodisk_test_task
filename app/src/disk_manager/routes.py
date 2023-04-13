@@ -24,8 +24,7 @@ async def get_disks() -> list[dict[str, Union[int, str]]]:
     with open("/proc/mounts", "r") as mounts:
         for line in mounts:
             parts = line.strip().split()
-            if parts[2] == "ext4" and "/dev/" in parts[0]:
-                cmd = ["df", "-h", parts[1]]
+            cmd = ["df", "-h", parts[1]]
             output = subprocess.check_output(cmd).decode().strip().split("\n")[1]
             parts = output.split()
             disks.append(
