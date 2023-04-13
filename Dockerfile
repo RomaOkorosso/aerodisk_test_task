@@ -19,7 +19,11 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Открыть порт из .env для трафика
-EX
+ENV PORT=PORT
+EXPOSE $PORT
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Запустить сервер с приложением
 CMD ["gunicorn", "app.main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:80", "--reload"]
