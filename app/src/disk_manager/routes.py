@@ -1,4 +1,5 @@
 import asyncio
+import json
 import platform
 import string
 from datetime import datetime
@@ -19,6 +20,20 @@ from app.src.disk_manager.schemas import DiskCreate, DiskUpdate
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
+
+ALLOWED_IN_LINUX = [""]
+
+
+def convert_size_to_mb(size_str):
+    print(f"size_str: {size_str}")
+    size = float(size_str[:-1])
+    print(f"size: {size}")
+    unit = size_str[-1].upper()
+    if unit == "G":
+        size *= 1024
+    elif unit == "T":
+        size *= 1024 * 1024
+    return int(size)
 
 
 async def get_disks():
@@ -42,42 +57,33 @@ async def get_disks():
                 }
             )
     elif platform.system() == "Linux":
-        command = "df -h"
+        command = "lsblk -J"
         process = subprocess.Popen(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         stdout, _ = process.communicate()
         output = stdout.decode("utf-8")
-        lines = output.strip().split("\n")[1:]
-        for line in lines:
-            values = line.split()
-            size = values[1]
-            if size[-1] == "G":
-                size = float(size[:-1]) * 1024
-            elif size[-1] == "M":
-                size = float(size[:-1])
-            else:
-                size = 0
-            disks.append(
-                {
-                    "name": values[0],
-                    "size": size,
-                    "filesystem": "ext4",
-                    "mountpoint": values[5],
-                }
-            )
-            with open(
-                f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a"
-            ) as f:
-                f.write(
-                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {disks[-1]}\n"
+        json_output = json.loads(output)
+        for device in json_output["blockdevices"]:
+            if device["type"] == "disk":
+                size = convert_size_to_mb(
+                    device["size"]
+                )  # конвертация размера диска в МБ
+                disks.append(
+                    {
+                        "name": device["name"],
+                        "size": size,
+                        "filesystem": "ext4",  # дополнительную информацию нужно получать через другие команды
+                        "mountpoint": device.get("mountpoint", ""),
+                    }
                 )
-
     else:
         with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
             f.write(
                 f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Not a valid system\n"
             )
+    with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
+        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {disks}\n")
 
     return disks
 
