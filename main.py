@@ -1,3 +1,5 @@
+import datetime
+
 from fastapi import FastAPI, Depends
 from fastapi.exceptions import RequestValidationError
 from fastapi.requests import Request
@@ -8,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import PlainTextResponse, RedirectResponse
 from starlette.staticfiles import StaticFiles
 from urllib.parse import quote
+import os
 
 from app.src import auth_router
 from app.src.auth.service import auth_service
@@ -38,6 +41,14 @@ async def validation_exception_handler(request, exc):
 # add action on app startup
 @app.on_event("startup")
 async def init_disks_in_db():
+    # create if no /logs and create today log file
+    if not os.path.exists("logs"):
+        os.mkdir("logs")
+    if not os.path.exists(f"logs/{datetime.datetime.now().date()}.log"):
+        with open(f"logs/{datetime.datetime.now().date()}.log", "w") as f:
+            f.write(
+                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Log file created for {datetime.datetime.now().date()}\n")
+
     await disk_manager_init_db.init_disks_in_db()
 
 
