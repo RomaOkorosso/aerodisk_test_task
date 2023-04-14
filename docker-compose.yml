@@ -1,17 +1,6 @@
 version: '3'
 
 services:
-  web:
-    build: .
-    ports:
-      - ${APP_PORT}
-    depends_on:
-      - db
-    env_file:
-      - .env
-    environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
-
   db:
     image: postgres:13.4-alpine
     ports:
@@ -25,3 +14,15 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+
+  web:
+    build: .
+    ports:
+      - ${APP_PORT}:8000
+    depends_on:
+      - db
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}"
+    command: sh -c "while ! nc -z db 5432; do sleep 1; done; alembic upgrade head && gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8000 --reload"

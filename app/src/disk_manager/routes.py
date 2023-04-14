@@ -1,5 +1,7 @@
+import asyncio
 import platform
 import string
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Request, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,22 +21,50 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
-async def get_disks() -> list[dict[str, Union[int, str]]]:
+async def get_disks():
     disks = []
-    with open("/proc/mounts", "r") as mounts:
-        for line in mounts:
-            parts = line.strip().split()
-            cmd = ["df", "-h", parts[1]]
-            output = subprocess.check_output(cmd).decode().strip().split("\n")[1]
-            parts = output.split()
-            disks.append(
-                {
-                    "name": parts[0],
-                    "size": int(parts[1].replace("G", "")),  # remove 'G' from size
-                    "filesystem": parts[2],
-                    "mountpoint": parts[5],
-                }
-            )
+    if platform.system() == 'Windows':
+        command = 'wmic logicaldisk get caption,size,filesystem,volumename'
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout, _ = process.communicate()
+        output = stdout.decode('utf-8')
+        lines = output.strip().split('\n')[1:]
+        for line in lines:
+            values = line.split()
+            disks.append({
+                'name': values[0],
+                'size': int(values[2]) // 1024,
+                'filesystem': values[1],
+                'mountpoint': values[3] if len(values) > 3 else ''
+            })
+    elif platform.system() == 'Linux':
+        command = 'df -h'
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        stdout, _ = process.communicate()
+        output = stdout.decode('utf-8')
+        lines = output.strip().split('\n')[1:]
+        for line in lines:
+            values = line.split()
+            size = values[1]
+            if size[-1] == 'G':
+                size = float(size[:-1]) * 1024
+            elif size[-1] == 'M':
+                size = float(size[:-1])
+            else:
+                size = 0
+            disks.append({
+                'name': values[0],
+                'size': size,
+                'filesystem': "ext4",
+                'mountpoint': values[5]
+            })
+            with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
+                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {disks[-1]}\n")
+
+    else:
+        with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
+            f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Not a valid system\n")
+
     return disks
 
 

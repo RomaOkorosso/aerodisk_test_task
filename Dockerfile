@@ -17,12 +17,7 @@ RUN poetry update --no-dev
 
 COPY . .
 
-EXPOSE ${APP_PORT}
-
-COPY ./entrypoint.sh /app/
-
-RUN ["chmod", "+x", "/app/entrypoint.sh"]
-ENTRYPOINT ["/app/entrypoint.sh"]
+EXPOSE 8000
 
 # Запустить сервер с приложением
-CMD ["gunicorn", "main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--reload"]
+#CMD ["gunicorn", "main:app", "-w", "4", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:8000", "--reload"]
