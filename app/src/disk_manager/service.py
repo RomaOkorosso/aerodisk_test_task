@@ -9,7 +9,6 @@ from app.src.disk_manager.models import Disk
 
 
 class DiskService:
-
     @staticmethod
     def get_unix_disks():
         output = subprocess.check_output(["df"])

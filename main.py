@@ -47,7 +47,8 @@ async def init_disks_in_db():
     if not os.path.exists(f"logs/{datetime.datetime.now().date()}.log"):
         with open(f"logs/{datetime.datetime.now().date()}.log", "w") as f:
             f.write(
-                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Log file created for {datetime.datetime.now().date()}\n")
+                f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Log file created for {datetime.datetime.now().date()}\n"
+            )
 
     await disk_manager_init_db.init_disks_in_db()
 

@@ -23,47 +23,61 @@ templates = Jinja2Templates(directory="templates")
 
 async def get_disks():
     disks = []
-    if platform.system() == 'Windows':
-        command = 'wmic logicaldisk get caption,size,filesystem,volumename'
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+    if platform.system() == "Windows":
+        command = "wmic logicaldisk get caption,size,filesystem,volumename"
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )
         stdout, _ = process.communicate()
-        output = stdout.decode('utf-8')
-        lines = output.strip().split('\n')[1:]
+        output = stdout.decode("utf-8")
+        lines = output.strip().split("\n")[1:]
         for line in lines:
             values = line.split()
-            disks.append({
-                'name': values[0],
-                'size': int(values[2]) // 1024,
-                'filesystem': values[1],
-                'mountpoint': values[3] if len(values) > 3 else ''
-            })
-    elif platform.system() == 'Linux':
-        command = 'df -h'
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+            disks.append(
+                {
+                    "name": values[0],
+                    "size": int(values[2]) // 1024,
+                    "filesystem": values[1],
+                    "mountpoint": values[3] if len(values) > 3 else "",
+                }
+            )
+    elif platform.system() == "Linux":
+        command = "df -h"
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+        )
         stdout, _ = process.communicate()
-        output = stdout.decode('utf-8')
-        lines = output.strip().split('\n')[1:]
+        output = stdout.decode("utf-8")
+        lines = output.strip().split("\n")[1:]
         for line in lines:
             values = line.split()
             size = values[1]
-            if size[-1] == 'G':
+            if size[-1] == "G":
                 size = float(size[:-1]) * 1024
-            elif size[-1] == 'M':
+            elif size[-1] == "M":
                 size = float(size[:-1])
             else:
                 size = 0
-            disks.append({
-                'name': values[0],
-                'size': size,
-                'filesystem': "ext4",
-                'mountpoint': values[5]
-            })
-            with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
-                f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {disks[-1]}\n")
+            disks.append(
+                {
+                    "name": values[0],
+                    "size": size,
+                    "filesystem": "ext4",
+                    "mountpoint": values[5],
+                }
+            )
+            with open(
+                f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a"
+            ) as f:
+                f.write(
+                    f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {disks[-1]}\n"
+                )
 
     else:
         with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
-            f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Not a valid system\n")
+            f.write(
+                f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Not a valid system\n"
+            )
 
     return disks
 
@@ -74,25 +88,28 @@ async def get_access_token_from_cookies(request: Request):
 
 @router.get("/disks", response_class=HTMLResponse)
 async def get_disks_view(
-        request: Request,
-        token: str = Depends(auth_service.is_user_authed),
-        session: AsyncSession = Depends(get_session),
+    request: Request,
+    token: str = Depends(auth_service.is_user_authed),
+    session: AsyncSession = Depends(get_session),
 ):
     disks = await crud_disk.get_all(db=session)
     context = {"request": request, "access_token": token, "disks": disks}
     return templates.TemplateResponse("disks.html", context)
 
 
-@router.post('disks/new')
+@router.post("disks/new")
 async def create_disk(
-        request: Request,
-        disk: DiskCreate,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed)
+    request: Request,
+    disk: DiskCreate,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     db_disk = await crud_disk.get_by_name(session=session, name=disk.name)
     if db_disk:
-        context = {"request": request, "error": f"Disk with name '{disk.name}' already exists"}
+        context = {
+            "request": request,
+            "error": f"Disk with name '{disk.name}' already exists",
+        }
         return templates.TemplateResponse("error.html", context)
     disk.mountpoint = disk.name
     new_disk: Disk = await crud_disk.create(db=session, obj_in=disk)
@@ -101,7 +118,7 @@ async def create_disk(
 
 @router.get("/disks/{disk_id}", response_class=HTMLResponse)
 async def get_disk_view(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -113,10 +130,10 @@ async def get_disk_view(
 
 @router.post("/disks/{disk_id}/update")
 async def update_disk(
-        request: Request,
-        disk_id: int,
-        disk: DiskUpdate,
-        session: AsyncSession = Depends(get_session),
+    request: Request,
+    disk_id: int,
+    disk: DiskUpdate,
+    session: AsyncSession = Depends(get_session),
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -128,7 +145,7 @@ async def update_disk(
 
 @router.post("/disks/{disk_id}/format")
 async def format_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     db_disk: Disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -148,7 +165,7 @@ async def format_disk(
 
 @router.post("/disks/{disk_id}/mount")
 async def mount_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     db_disk: Disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -166,7 +183,7 @@ async def mount_disk(
 
 @router.post("/disks/{disk_id}/umount")
 async def umount_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -198,7 +215,7 @@ async def umount_disk(
 
 @router.post("/disks/{disk_id}/wipefs")
 async def wipefs_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:

@@ -11,8 +11,10 @@ from app.src.disk_manager.schemas import DiskCreate, DiskUpdate
 class CRUDDisk(CRUDBase[Disk, DiskCreate, DiskUpdate]):
     async def get_by_name(self, session: AsyncSession, name: str) -> Disk:
         return (
-            await session.execute(select(self.model).where(self.model.name == name))
-        ).scalars().first()
+            (await session.execute(select(self.model).where(self.model.name == name)))
+            .scalars()
+            .first()
+        )
 
     async def create_or_skip(self, session: AsyncSession, obj_in: DiskCreate) -> Disk:
         if not obj_in.name:
