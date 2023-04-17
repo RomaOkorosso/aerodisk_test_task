@@ -12,7 +12,7 @@ from starlette.staticfiles import StaticFiles
 from urllib.parse import quote
 import os
 
-from app.src import auth_router
+from app.src import auth_router, logger
 from app.src.auth.service import auth_service
 from app.src.base.exceptions import Unauthorized
 from app.src.disk_manager import disk_manager_router
@@ -30,11 +30,13 @@ app.include_router(disk_manager_router.router)
 
 @app.exception_handler(Unauthorized)
 async def unauthorized_exception_handler(request, exc):
+    logger.log("Unauthorized request")
     return RedirectResponse(url="/auth/login" + "?next=" + quote(request.url.path))
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
+    logger.log(f"ErrorL {exc}")
     return PlainTextResponse(str(exc), status_code=400)
 
 
@@ -52,13 +54,14 @@ async def init_disks_in_db():
 
     await disk_manager_init_db.init_disks_in_db()
 
+    logger.log("On app startup action completed")
+
+    return
+
 
 async def get_context(request: Request, session: AsyncSession = Depends(get_session)):
-    token = request.cookies.get("access_token")
-    print("token", token)
-    access_token = await auth_service.get_access_token_from_cookie(
-        request.cookies.get("access_token")
-    )
+    token_cooke = request.cookies.get("access_token")
+    access_token = await auth_service.get_access_token_from_cookie(token_cooke)
     print("access", access_token)
     if access_token:
         username = await auth_service.get_username_from_token(
@@ -66,19 +69,19 @@ async def get_context(request: Request, session: AsyncSession = Depends(get_sess
         )
     else:
         username = None
+
+    logger.log(f"Context (main.py): {request} {access_token} {username}")
+
     return {"request": request, "access_token": access_token, "username": username}
 
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, context: dict = Depends(get_context)):
+    logger.log(f"Home (GET): {request} {context}")
     return templates.TemplateResponse("home.html", context)
 
 
 @app.post("/", response_class=HTMLResponse)
 async def home_post(request: Request, context: dict = Depends(get_context)):
+    logger.log(f"Home (POST): {request} {context}")
     return templates.TemplateResponse("home.html", context)
-
-
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}

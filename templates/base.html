@@ -33,12 +33,10 @@
 
     {% block scripts %}
     <script>
-        console.log(2)
         const openDisks = document.querySelector('#disks');
         openDisks.addEventListener('click', async () => {
             const token = localStorage.getItem('access_token');
             const headers = {'Authorization': `Bearer ${token}`};
-            console.log(headers)
             const response = await fetch('/disks', {
                 method: 'GET',
                 headers: headers

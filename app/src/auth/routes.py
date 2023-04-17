@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status, Form
-from fastapi.logger import logger
 from fastapi.security import HTTPBasicCredentials, OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
@@ -9,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
+from app.src.base import logger
 from app.src.auth import schemas, service, models, crud
 from app.src.auth.crud import crud_token
 from app.src.auth.models import Token
@@ -18,10 +18,9 @@ from app.src.base.exceptions import WeakPassword
 router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="templates")
 
-logger.error("auth router")
-
 
 async def get_context(request: Request, session: AsyncSession = Depends(get_session)):
+    logger.log(f"{datetime.now()} - (auth.routes) Get context for {request.url.path}")
     access_token = await service.auth_service.get_access_token_from_cookie(
         request.cookies.get("access_token")
     )
@@ -31,11 +30,17 @@ async def get_context(request: Request, session: AsyncSession = Depends(get_sess
         )
     else:
         username = None
+
+    logger.log(
+        f"{datetime.now()} - (auth.routes) Context: {request.url.path} - {access_token} - {username}"
+    )
+
     return {"request": request, "access_token": access_token, "username": username}
 
 
 @router.get("/register")
 async def register(request: Request, context: dict = Depends(get_context)):
+    logger.log(f"{datetime.now()} - (auth.routes) Get register page")
     return templates.TemplateResponse("register.html", context)
 
 
@@ -48,6 +53,7 @@ async def register(
     password: str = Form(...),
     session: AsyncSession = Depends(get_session),
 ):
+    logger.log(f"{datetime.now()} - (auth.routes) Register post")
     try:
         user = schemas.UserCreate(
             full_name=full_name, email=email, username=username, password=password
@@ -56,11 +62,13 @@ async def register(
         return templates.TemplateResponse(
             "register.html", {"request": request, "error": "Weak password"}
         )
+
     password_hash = service.auth_service.get_password_hash(user.password)
     user_dict = user.dict()
     user_dict["password"] = password_hash
     new_user = models.User(**user_dict)
-    new_user = await crud.crud_user.create(db=session, obj_in=new_user)
+    new_user: models.User = await crud.crud_user.create(db=session, obj_in=new_user)
+
     access_token = service.auth_service.create_access_token(
         {"username": new_user.username}
     )
@@ -79,12 +87,18 @@ async def register(
         session=session, username=new_user.username, access_token=access_token
     )
 
+    logger.log(
+        f"{datetime.now()} - (auth.routes) Register post - {new_user.__dict__} - {access_token}"
+    )
+
     return response
 
 
 @router.get("/login", response_class=HTMLResponse)
 async def login(request: Request, context: dict = Depends(get_context), next: str = ""):
+    logger.log(f"{datetime.now()} - (auth.routes) Get login page")
     context["next"] = next
+    logger.log(f"{datetime.now()} - (auth.routes) Get login page - {context}")
     return templates.TemplateResponse("login.html", context)
 
 
@@ -96,6 +110,7 @@ async def login_post(
     context: dict = Depends(get_context),
     next: str = None,
 ):
+    logger.log(f"{datetime.now()} - (auth.routes) Login post")
     user = await service.auth_service.authenticate_user(
         username=form_data.username, password=form_data.password, session=session
     )
@@ -121,6 +136,9 @@ async def login_post(
     context["current_user"] = user
     context["access_token"] = access_token
     context["next"] = next
+    logger.log(
+        f"{datetime.now()} - (auth.routes) Login post - {user.__dict__} - {access_token}"
+    )
     return response
 
 
@@ -130,16 +148,19 @@ async def logout(
     access_token: str = Cookie(None),
     session: AsyncSession = Depends(get_session),
 ):
+    logger.log(f"{datetime.now()} - (auth.routes) Logout")
     if access_token:
         await crud_token.revoke(session, access_token)
 
     response = RedirectResponse(url="/auth/login")
     response.delete_cookie(key="access_token")
+    logger.log(f"{datetime.now()} - (auth.routes) Logout - {access_token}")
     return response
 
 
 @router.post("/set_token", response_class=HTMLResponse)
 async def set_token_view(request: Request, context: dict = Depends(get_context)):
+    logger.log(f"{datetime.now()} - (auth.routes) Set token")
     return templates.TemplateResponse("set_token.html", context)
 
 
@@ -148,6 +169,7 @@ async def login_for_access_token(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: AsyncSession = Depends(get_session),
 ):
+    logger.log(f"{datetime.now()} - (auth.routes) Login for access token")
     user = await service.auth_service.authenticate_user(
         session, form_data.username, form_data.password
     )
@@ -163,5 +185,7 @@ async def login_for_access_token(
     )
     token = Token(token=access_token, user_id=user.id)
     await crud_token.create(session, obj_in=token)
-    print("token successfully created:", access_token)
+    logger.log(
+        f"{datetime.now()} - (auth.routes) Login for access token - {user.__dict__} - {access_token}"
+    )
     return access_token

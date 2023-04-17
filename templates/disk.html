@@ -23,12 +23,8 @@
         event.preventDefault();
         const name = document.getElementById("name").value;
         const size = document.getElementById("size").value;
-        const diskId = {
-        {
-            disk.id
-        }
-    }
-        ;
+        // eslint-disable-next-line
+        const diskId = {{disk.id}};
 
         fetch(`/disks/${diskId}/update`, {
             method: "POST",

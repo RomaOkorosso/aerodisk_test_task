@@ -1,17 +1,16 @@
-import asyncio
 import json
 import platform
 import string
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request, UploadFile, File
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from typing import List, Union
 import os
 import subprocess
 
+from app.src import logger
 from app.src.auth.service import auth_service
 from app.src.base import get_session
 from app.src.disk_manager.crud import crud_disk
@@ -25,9 +24,7 @@ ALLOWED_IN_LINUX = [""]
 
 
 def convert_size_to_mb(size_str):
-    print(f"size_str: {size_str}")
     size = float(size_str[:-1])
-    print(f"size: {size}")
     unit = size_str[-1].upper()
     if unit == "G":
         size *= 1024
@@ -37,6 +34,7 @@ def convert_size_to_mb(size_str):
 
 
 async def get_disks():
+    logger.log("Get disks")
     disks = []
     if platform.system() == "Windows":
         command = "wmic logicaldisk get caption,size,filesystem,volumename"
@@ -78,12 +76,8 @@ async def get_disks():
                     }
                 )
     else:
-        with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
-            f.write(
-                f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - Not a valid system\n"
-            )
-    with open(f"logs/{datetime.now().date().strftime('%Y-%m-%d')}.log", "a") as f:
-        f.write(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {disks}\n")
+        logger.log("Unknown OS")
+    logger.log(f"Disks: {disks}")
 
     return disks
 
@@ -98,8 +92,10 @@ async def get_disks_view(
     token: str = Depends(auth_service.is_user_authed),
     session: AsyncSession = Depends(get_session),
 ):
+    logger.log(f"{datetime.now()} - Get disks view")
     disks = await crud_disk.get_all(db=session)
     context = {"request": request, "access_token": token, "disks": disks}
+    logger.log(f"{datetime.now()} - Context: {context}")
     return templates.TemplateResponse("disks.html", context)
 
 
@@ -110,6 +106,7 @@ async def create_disk(
     session: AsyncSession = Depends(get_session),
     token=Depends(auth_service.is_user_authed),
 ):
+    logger.log("{datetime.now()} - Create disk")
     db_disk = await crud_disk.get_by_name(session=session, name=disk.name)
     if db_disk:
         context = {
@@ -119,6 +116,7 @@ async def create_disk(
         return templates.TemplateResponse("error.html", context)
     disk.mountpoint = disk.name
     new_disk: Disk = await crud_disk.create(db=session, obj_in=disk)
+    logger.log(f"{datetime.now()} - New disk: {new_disk.__dict__}")
     return RedirectResponse(url=f"/disks/{new_disk.id}/mount", status_code=303)
 
 
@@ -126,6 +124,7 @@ async def create_disk(
 async def get_disk_view(
     request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
+    logger.log(f"{datetime.now()} - Get disk view with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
@@ -141,11 +140,13 @@ async def update_disk(
     disk: DiskUpdate,
     session: AsyncSession = Depends(get_session),
 ):
+    logger.log(f"{datetime.now()} - Update disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
         return templates.TemplateResponse("error.html", context)
-    await crud_disk.update(session, db_obj=db_disk, obj_in=disk)
+    updated_disk = await crud_disk.update(session, db_obj=db_disk, obj_in=disk)
+    logger.log(f"{datetime.now()} - Updated disk: {updated_disk.__dict__}")
     return RedirectResponse(url=f"/disks/{disk_id}")
 
 
@@ -153,6 +154,7 @@ async def update_disk(
 async def format_disk(
     request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
+    logger.log(f"{datetime.now()} - Format disk with id '{disk_id}'")
     db_disk: Disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
@@ -160,11 +162,18 @@ async def format_disk(
     # Windows disk formatting
     if os.name == "nt":
         cmd = ["format", f"{db_disk.name}:\\", "/fs:NTFS", "/q"]
-        subprocess.run(cmd)
     # Unix disk formatting
     else:
         cmd = ["sudo", "mkfs.ext4", db_disk.name]
-        subprocess.run(cmd)
+
+    completed_process = subprocess.run(cmd)
+    logger.log(f"{datetime.now()} - Process was completed with: {completed_process}")
+    if completed_process.returncode != 0:
+        context = {
+            "request": request,
+            "error": f"Disk with id '{disk_id}' not formatted",
+        }
+        return templates.TemplateResponse("error.html", context)
 
     return RedirectResponse(url=f"/disks/{disk_id}")
 
@@ -173,6 +182,7 @@ async def format_disk(
 async def mount_disk(
     request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
+    logger.log(f"{datetime.now()} - Mount disk with id '{disk_id}'")
     db_disk: Disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
@@ -182,7 +192,16 @@ async def mount_disk(
         cmd = ["mountvol", db_disk.name, db_disk.mountpoint]
     else:
         cmd = ["sudo", "mount", db_disk.name, db_disk.mountpoint]
-    subprocess.run(cmd)
+
+    completed_process = subprocess.run(cmd)
+    if completed_process.returncode != 0:
+        context = {
+            "request": request,
+            "error": f"Disk with id '{disk_id}' not mounted",
+        }
+        return templates.TemplateResponse("error.html", context)
+
+    logger.log(f"{datetime.now()} - Process was completed with: {completed_process}")
 
     return RedirectResponse(url=f"/disks/{disk_id}")
 
@@ -191,6 +210,7 @@ async def mount_disk(
 async def umount_disk(
     request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
+    logger.log(f"{datetime.now()} - Umount disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
@@ -210,11 +230,20 @@ async def umount_disk(
 
         # Unmount the disk
         cmd = ["mountvol", drive_letter + ":", "/p"]
-        subprocess.run(cmd, shell=True)
+        completed_process = subprocess.run(cmd, shell=True)
     else:
         # Unmount the disk
         cmd = ["sudo", "umount", db_disk.mountpoint]
-        subprocess.run(cmd)
+        completed_process = subprocess.run(cmd)
+
+    logger.log(f"{datetime.now()} - Process was completed with: {completed_process}")
+
+    if completed_process.returncode != 0:
+        context = {
+            "request": request,
+            "error": f"Disk with id '{disk_id}' not unmounted",
+        }
+        return templates.TemplateResponse("error.html", context)
 
     return RedirectResponse(url=f"/disks/{disk_id}")
 
@@ -229,6 +258,15 @@ async def wipefs_disk(
         return templates.TemplateResponse("error.html", context)
     # Wipe disk header
     cmd = ["sudo", "wipefs", "-a", db_disk.path]
-    subprocess.run(cmd)
+
+    completed_process = subprocess.run(cmd)
+
+    logger.log(f"{datetime.now()} - Process was completed with: {completed_process}")
+    if completed_process.returncode != 0:
+        context = {
+            "request": request,
+            "error": f"Disk with id '{disk_id}' not wiped",
+        }
+        return templates.TemplateResponse("error.html", context)
 
     return RedirectResponse(url=f"/disks/{disk_id}")

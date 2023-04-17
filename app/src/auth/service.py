@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 from fastapi import HTTPException, Depends, Cookie
-from fastapi.logger import logger
 from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.src.base import logger
 from app.src.base import settings
 from app.src.auth.crud import crud_user, crud_token
 from app.src.auth.models import User, Token
@@ -24,9 +24,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 class AuthService:
     @staticmethod
     async def get_current_user(
-        session: AsyncSession = Depends(get_session),
-        token: str = Depends(oauth2_scheme),
+            session: AsyncSession = Depends(get_session),
+            token: str = Depends(oauth2_scheme),
     ) -> str:
+        logger.log(f"{datetime.now()} - get current user")
         try:
             payload = jwt.decode(
                 token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -47,12 +48,14 @@ class AuthService:
         )
         if user is None:
             raise HTTPException(status_code=401, detail="Invalid username or password")
+        logger.log(f"{datetime.now()} - get current user - {user}")
         return token
 
     @staticmethod
     def create_access_token(
-        data: dict, expires_delta: Optional[timedelta] = None
+            data: dict, expires_delta: Optional[timedelta] = None
     ) -> str:
+        logger.log(f"{datetime.now()} - create access token")
         to_encode = data.copy()
         if expires_delta:
             expire = datetime.utcnow() + expires_delta
@@ -64,53 +67,65 @@ class AuthService:
         encoded_jwt = jwt.encode(
             to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
         )
+        logger.log(f"{datetime.now()} - create access token - {encoded_jwt}")
         return encoded_jwt
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
+        logger.log(f"{datetime.now()} - verify password"
         return pwd_context.verify(plain_password, hashed_password)
 
     @staticmethod
     def get_password_hash(password: str) -> str:
+        logger.log(f"{datetime.now()} - get password hash")
         return pwd_context.hash(password)
 
     @staticmethod
     async def authenticate_user(
-        username: str, password: str, session: AsyncSession
+            username: str, password: str, session: AsyncSession
     ) -> Optional[User]:
+        logger.log(f"{datetime.now()} - authenticate user")
         user = await crud_user.get_user_by_username(session=session, username=username)
         if not user:
             return None
         if not auth_service.verify_password(password, user.password):
             return None
+        logger.log(f"{datetime.now()} - authenticate user - {user}")
         return user
 
     @staticmethod
     async def get_access_token_from_cookie(
-        access_token: Optional[str] = Cookie(None),
+            access_token: Optional[str] = Cookie(None),
     ) -> Optional[str]:
+        logger.log(f"{datetime.now()} - get access token from cookie")
         if not access_token:
             return None
+        logger.log(f"{datetime.now()} - get access token from cookie - {access_token}")
         return access_token
 
     @staticmethod
     async def is_user_authed(access_token: Optional[str] = Cookie(None)):
+        logger.log(f"{datetime.now()} - is user authed")
         if not access_token:
             raise exceptions.Unauthorized("No token in cookies")
+        logger.log(f"{datetime.now()} - is user authed - {access_token}")
         return access_token
 
     @staticmethod
     async def create_token(session: AsyncSession, username: str, access_token: str):
+        logger.log(f"{datetime.now()} - create token")
         db_user: User = await crud_user.get_user_by_username(
             session=session, username=username
         )
         token = Token(user_id=db_user.id, token=access_token)
+        logger.log(f"{datetime.now()} - create token - {token}")
         return await crud_token.create(db=session, obj_in=token)
 
     @staticmethod
     async def get_username_from_token(
-        session: AsyncSession, access_token: str
+            session: AsyncSession, access_token: str
     ) -> Optional[str]:
+        logger.log(f"{datetime.now()} - get username from token")
         try:
             payload = jwt.decode(
                 access_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -127,14 +142,18 @@ class AuthService:
         )
         if user is None:
             return None
+
+        logger.log(f"{datetime.now()} - get username from token - {user.username}")
         return user.username
 
     @staticmethod
     async def get_username_from_cookie(
-        session: AsyncSession, access_token: Optional[str] = Cookie(None)
+            session: AsyncSession, access_token: Optional[str] = Cookie(None)
     ) -> Optional[str]:
+        logger.log(f"{datetime.now()} - get username from cookie")
         if not access_token:
             return None
+        logger.log(f"{datetime.now()} - get username from cookie - {access_token}")
         return await auth_service.get_username_from_token(session, access_token)
 
 
