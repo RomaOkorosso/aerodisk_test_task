@@ -72,7 +72,7 @@ class AuthService:
 
     @staticmethod
     def verify_password(plain_password: str, hashed_password: str) -> bool:
-        logger.log(f"{datetime.now()} - verify password"
+        logger.log(f"{datetime.now()} - verify password")
         return pwd_context.verify(plain_password, hashed_password)
 
     @staticmethod
