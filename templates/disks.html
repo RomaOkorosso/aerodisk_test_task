@@ -1,30 +1,38 @@
 {% extends 'home.html' %}
 
 {% block content %}
-
-<h1>Disks</h1>
+<div class="div-page-name">
+    <h1>Disks</h1>
+</div>
 {% if disks %}
+<div class="div-content-center">
+    <ul>
+        {% for disk in disks %}
+        <li>
+            <a href="/disks/{{ disk.id }}">{{ disk.name }}</a> - {{ disk.size }} MB
+            <a href="disks/{{disk.id}}/umount">unmount</a>
+            <a href="disks/{{disk.id}}/format">format</a>
+            <a href="disks/{{disk.id}}/wipefs">wipefs</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
 
-<ul>
-    {% for disk in disks %}
-    <li><a href="/disks/{{ disk.id }}">{{ disk.name }}</a> - {{ disk.size }} MB
-        <a href="disks/{{disk.id}}/umount">unmount</a>
-        <a href="disks/{{disk.id}}/format">format</a>
-        <a href="disks/{{disk.id}}/wipefs">wipefs</a>
-    </li>
-    {% endfor %}
-</ul>
-<form id="add-disk-form">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name">
-    <br>
-    <label for="size">Size:</label>
-    <input type="text" id="size" name="size">
-    <br>
-    <button type="submit">Mount new disk</button>
-</form>
+<div class="div-content-center">
+    <form id="add-disk-form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name">
+        <br>
+        <label for="size">Size:</label>
+        <input type="text" id="size" name="size">
+        <br>
+        <button type="submit">Mount new disk</button>
+    </form>
+</div>
 {% else %}
-<p>No disks found.</p>
+<div class="div-content-center">
+    <h1> No disks found.</h1>
+</div>
 {% endif %}
 
 <script>

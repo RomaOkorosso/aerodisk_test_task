@@ -5,11 +5,32 @@ Home
 {% endblock %}
 
 {% block content %}
+<div class="div-page-name">
+    <h1>Welcome to AeroDisk!</h1>
+</div>
 
-<h1>Welcome to AeroDisk!</h1>
 {% if username %}
-<p>You are currently logged in as {{ username }}.</p>
-<button id="disks" type="button">Go to disks</button>
+<div class="div-content-center">
+    <p>You are currently logged in as {{ username }}.</p>
+</div>
+<div class="div-content-center">
+    <button id="disks" type="button">Go to disks</button>
+</div>
+{% else %}
+<div class="div-content-center">
+    <p>You are not logged in.</p>
+</div>
+<div class="div-content-center">
+    <button id="login-btn" type="button">Login</button>
+</div>
 {% endif %}
+
+<script>
+    const loginBtn = document.querySelector('#login-btn');
+    loginBtn.addEventListener('click', () => {
+        window.location.href = '/auth/login';
+    });
+</script>
+
 {% endblock %}
 

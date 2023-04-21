@@ -27,12 +27,25 @@ button {
     cursor: pointer;
 }
 
-/* установим стиль для форм */
-form {
+.div-form {
     display: flex;
     flex-direction: column;
     align-items: center;
+
+}
+
+
+/* установим стиль для форм */
+form {
+    display: flex;
+    align-self: center;
+    flex-direction: column;
+    align-items: center;
     margin-top: 2rem;
+    /*    set borders to 1/4 * 1/4 of screen */
+    width: 25vw;
+    height: 25vh;
+    box-sizing: border-box;
 }
 
 /* установим стиль для полей ввода форм */
@@ -49,4 +62,53 @@ form input {
 .error {
     color: red;
     margin-bottom: 1rem;
+}
+
+footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: #4CAF50;
+    color: white;
+    text-align: center;
+}
+
+.div-page-name {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 10vh;
+}
+
+.div-content-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #357b37;
+}
+
+nav li {
+    float: left;
+}
+
+nav li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+
+
+}
+
+nav li a:hover {
+    background-color: #09472e;
 }

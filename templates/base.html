@@ -4,6 +4,8 @@
     <title>{% block title %}{% endblock %} - AeroDisk</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--    import css from ./static/css/style.css-->
+    <link rel="stylesheet" href="/static/css/styles.css">
 
     {% if access_token %}
     <script>
@@ -16,13 +18,17 @@
 <body>
 <header>
     <nav>
-        <ul>
-            <li><a href="/">Home</a></li>
+        <ul class="nav-ul">
+            <li class="nav-li"><a class="nav-a" href="/">Home</a></li>
             {% if access_token %}
-            <li><a href="auth/logout">Logout</a></li>
+            <li class="nav-li"><a class="nav-a" href="/auth/logout">Logout</a></li>
             {% else %}
-            <li><a href="/auth/register">Register</a></li>
-            <li><a href="/auth/login">Login</a></li>
+            <li class="nav-li"><a class="nav-a" href="/auth/register">Register</a></li>
+            <li class="nav-li"><a class="nav-a" href="/auth/login">Login</a></li>
+            {% endif %}
+            <!--            if current page is /disk/<disk_id> draw /disks link-->
+            {% if '/disks/'in request.path %}
+            <li class="nav-li"><a class="nav-a" href="/disks">Disks</a></li>
             {% endif %}
         </ul>
     </nav>

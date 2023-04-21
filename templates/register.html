@@ -5,19 +5,23 @@ Register
 {% endblock %}
 
 {% block content %}
-  <h1>Register</h1>
-  {% if error %}
-    <p style="color: red;">{{ error }}</p>
-  {% endif %}
-  <form action="/auth/register" method="post">
-    <label for="full_name">Full Name:</label>
-    <input type="text" id="full_name" name="full_name" required><br>
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" required><br>
-    <label for="username">Username:</label>
-    <input type="text" id="username" name="username" required><br>
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" required><br>
-    <button type="submit">Register</button>
-  </form>
+<div class="div-page-name">
+    <h1>Register</h1>
+</div>
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% endif %}
+<div class="div-form">
+    <form action="/auth/register" method="post">
+        <label for="full_name">Full Name:</label>
+        <input type="text" id="full_name" name="full_name" required><br>
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br>
+        <label for="username">Username:</label>
+        <input type="text" id="username" name="username" required><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+        <button type="submit">Register</button>
+    </form>
+</div>
 {% endblock %}

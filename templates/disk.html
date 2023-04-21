@@ -5,26 +5,36 @@
 <p>{{ message }}</p>
 {% endif %}
 <br>
-<h1>{{ disk.name }}</h1>
-<p>Size: {{ disk.size }}</p>
+<div class="div-content-center">
+    <h1>{{ disk.name }}</h1>
+</div>
+<div class="div-content-center">
+    <p>Size: {{ disk.size }} MB</p>
+</div>
 
-<form onsubmit="updateDisk(event)">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" value="{{ disk.name }}">
-    <br>
-    <label for="size">Size:</label>
-    <input type="text" id="size" name="size" value="{{ disk.size }}">
-    <br>
-    <input type="submit" value="Update Disk">
-</form>
+<div class="div-form">
+    <form onsubmit="updateDisk(event)">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" value="{{ disk.name }}">
+        <br>
+        <label for="size">Size:</label>
+        <input type="text" id="size" name="size" value="{{ disk.size }}">
+        <br>
+        <input type="submit" value="Update Disk">
+    </form>
+</div>
+
+<div class="div-content-center">
+    <button id="disks"> To disks</button>
+</div>
 
 <script>
     function updateDisk(event) {
+        const disk = disk;
         event.preventDefault();
         const name = document.getElementById("name").value;
         const size = document.getElementById("size").value;
-        // eslint-disable-next-line
-        const diskId = {{disk.id}};
+        const diskId = disk.id;
 
         fetch(`/disks/${diskId}/update`, {
             method: "POST",
