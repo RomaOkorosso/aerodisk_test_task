@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.src.base import CRUDBase
-from app.src.base import logger
+from logger import logger
 from app.src.disk_manager.models import Disk
 from app.src.disk_manager.schemas import DiskCreate, DiskUpdate
 

@@ -3,7 +3,7 @@ from datetime import datetime
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.src import logger
+from logger import logger
 from app.src.auth.models import User, Token
 from app.src.auth.schemas import UserCreate, UserUpdate, TokenCreate, TokenUpdate
 from app.src.base import CRUDBase

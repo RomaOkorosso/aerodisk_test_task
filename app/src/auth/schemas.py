@@ -1,9 +1,7 @@
 import re
 from datetime import datetime
 from typing import Optional
-
-from passlib.handlers.pbkdf2 import pbkdf2_sha256
-from pydantic import BaseModel, validate_email, root_validator, validator, EmailStr
+from pydantic import BaseModel, validator, EmailStr
 
 from app.src.base import exceptions
 

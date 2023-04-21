@@ -14,7 +14,3 @@ from app.src.disk_manager import (
     disk_manager_schemas,
     disk_manager_init_db,
 )
-
-from app.src.base import (
-    logger,
-)

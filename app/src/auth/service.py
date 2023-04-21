@@ -6,7 +6,7 @@ from fastapi.security import OAuth2PasswordBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.src.base import logger
+from logger import logger
 from app.src.base import settings
 from app.src.auth.crud import crud_user, crud_token
 from app.src.auth.models import User, Token

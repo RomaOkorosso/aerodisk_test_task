@@ -2,7 +2,7 @@ import platform
 import subprocess
 import json
 
-from app.src import logger
+from logger import logger
 
 
 class DiskService:

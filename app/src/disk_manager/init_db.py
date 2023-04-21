@@ -1,7 +1,7 @@
 import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.src import logger
+from logger import logger
 from app.src.base.db.session import get_session_
 from app.src.disk_manager.crud import crud_disk
 from app.src.disk_manager.service import disk_service

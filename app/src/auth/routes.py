@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, Response
 
-from app.src.base import logger
+from logger import logger
 from app.src.auth import schemas, service, models, crud
 from app.src.auth.crud import crud_token
 from app.src.auth.models import Token

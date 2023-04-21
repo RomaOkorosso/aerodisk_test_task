@@ -12,11 +12,12 @@ from starlette.staticfiles import StaticFiles
 from urllib.parse import quote
 import os
 
-from app.src import auth_router, logger
+from app.src import auth_router
 from app.src.auth.service import auth_service
 from app.src.base.exceptions import Unauthorized
 from app.src.disk_manager import disk_manager_router
 from app.src.base import get_session
+from logger import logger
 from app.src import disk_manager_init_db
 
 app = FastAPI()
