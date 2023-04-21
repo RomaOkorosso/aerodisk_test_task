@@ -10,10 +10,14 @@ class DiskService:
     def run_shell_command(command: str | list[str], shell: bool = False) -> str:
         if type(command) is list:
             command = "".join(c for c in command)
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell)
+        process = subprocess.Popen(
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell
+        )
         stdout, _ = process.communicate()
         if _ is not None:
-            logger.log(f"Error while running command: {_} with params command={command}, shell={shell}")
+            logger.log(
+                f"Error while running command: {_} with params command={command}, shell={shell}"
+            )
         output: str = stdout.decode("utf-8")
         return output
 

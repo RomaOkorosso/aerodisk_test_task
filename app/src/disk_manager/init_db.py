@@ -19,7 +19,7 @@ async def init(session: AsyncSession):
                 await crud_disk.create(db=session, obj_in=DiskCreate(**disk))
         except Exception as e:
             with open(
-                    f"./logs/{datetime.datetime.now().date().strftime('%Y-%m-%d')}.log", "a"
+                f"./logs/{datetime.datetime.now().date().strftime('%Y-%m-%d')}.log", "a"
             ) as f:
                 f.write(
                     f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {e}\n"
