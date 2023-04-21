@@ -4,13 +4,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.src import logger
 from app.src.base.db.session import get_session_
 from app.src.disk_manager.crud import crud_disk
-from app.src.disk_manager.routes import get_disks
-from app.src.disk_manager.schemas import DiskCreate, DiskUpdate
+from app.src.disk_manager.service import disk_service
+from app.src.disk_manager.schemas import DiskCreate
 
 
 async def init(session: AsyncSession):
     logger.log("Init disks in db")
-    disks = await get_disks()
+    disks = await disk_service.get_disks()
     logger.log(f"Disks got")
     for disk in disks:
         try:
@@ -19,7 +19,7 @@ async def init(session: AsyncSession):
                 await crud_disk.create(db=session, obj_in=DiskCreate(**disk))
         except Exception as e:
             with open(
-                f"./logs/{datetime.datetime.now().date().strftime('%Y-%m-%d')}.log", "a"
+                    f"./logs/{datetime.datetime.now().date().strftime('%Y-%m-%d')}.log", "a"
             ) as f:
                 f.write(
                     f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')} - {e}\n"

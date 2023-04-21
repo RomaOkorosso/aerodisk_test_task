@@ -1,4 +1,3 @@
-import json
 import platform
 import string
 from datetime import datetime
@@ -21,65 +20,6 @@ router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 ALLOWED_IN_LINUX = [""]
-
-
-def convert_size_to_mb(size_str):
-    size = float(size_str[:-1])
-    unit = size_str[-1].upper()
-    if unit == "G":
-        size *= 1024
-    elif unit == "T":
-        size *= 1024 * 1024
-    return int(size)
-
-
-async def get_disks():
-    logger.log("Get disks")
-    disks = []
-    if platform.system() == "Windows":
-        command = "wmic logicaldisk get caption,size,filesystem,volumename"
-        process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )
-        stdout, _ = process.communicate()
-        output = stdout.decode("utf-8")
-        lines = output.strip().split("\n")[1:]
-        for line in lines:
-            values = line.split()
-            disks.append(
-                {
-                    "name": values[0],
-                    "size": int(values[2]) // 1024,
-                    "filesystem": values[1],
-                    "mountpoint": values[3] if len(values) > 3 else "",
-                }
-            )
-    elif platform.system() == "Linux":
-        command = "lsblk -J"
-        process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
-        )
-        stdout, _ = process.communicate()
-        output = stdout.decode("utf-8")
-        json_output = json.loads(output)
-        for device in json_output["blockdevices"]:
-            if device["type"] == "disk":
-                size = convert_size_to_mb(
-                    device["size"]
-                )  # конвертация размера диска в МБ
-                disks.append(
-                    {
-                        "name": device["name"],
-                        "size": size,
-                        "filesystem": "ext4",  # дополнительную информацию нужно получать через другие команды
-                        "mountpoint": device.get("mountpoint", ""),
-                    }
-                )
-    else:
-        logger.log("Unknown OS")
-    logger.log(f"Disks: {disks}")
-
-    return disks
 
 
 async def get_access_token_from_cookies(request: Request):

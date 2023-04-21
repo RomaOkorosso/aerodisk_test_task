@@ -24,8 +24,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 class AuthService:
     @staticmethod
     async def get_current_user(
-            session: AsyncSession = Depends(get_session),
-            token: str = Depends(oauth2_scheme),
+        session: AsyncSession = Depends(get_session),
+        token: str = Depends(oauth2_scheme),
     ) -> str:
         logger.log(f"{datetime.now()} - get current user")
         try:
@@ -53,7 +53,7 @@ class AuthService:
 
     @staticmethod
     def create_access_token(
-            data: dict, expires_delta: Optional[timedelta] = None
+        data: dict, expires_delta: Optional[timedelta] = None
     ) -> str:
         logger.log(f"{datetime.now()} - create access token")
         to_encode = data.copy()
@@ -82,7 +82,7 @@ class AuthService:
 
     @staticmethod
     async def authenticate_user(
-            username: str, password: str, session: AsyncSession
+        username: str, password: str, session: AsyncSession
     ) -> Optional[User]:
         logger.log(f"{datetime.now()} - authenticate user")
         user = await crud_user.get_user_by_username(session=session, username=username)
@@ -95,7 +95,7 @@ class AuthService:
 
     @staticmethod
     async def get_access_token_from_cookie(
-            access_token: Optional[str] = Cookie(None),
+        access_token: Optional[str] = Cookie(None),
     ) -> Optional[str]:
         logger.log(f"{datetime.now()} - get access token from cookie")
         if not access_token:
@@ -123,7 +123,7 @@ class AuthService:
 
     @staticmethod
     async def get_username_from_token(
-            session: AsyncSession, access_token: str
+        session: AsyncSession, access_token: str
     ) -> Optional[str]:
         logger.log(f"{datetime.now()} - get username from token")
         try:
@@ -148,7 +148,7 @@ class AuthService:
 
     @staticmethod
     async def get_username_from_cookie(
-            session: AsyncSession, access_token: Optional[str] = Cookie(None)
+        session: AsyncSession, access_token: Optional[str] = Cookie(None)
     ) -> Optional[str]:
         logger.log(f"{datetime.now()} - get username from cookie")
         if not access_token:
