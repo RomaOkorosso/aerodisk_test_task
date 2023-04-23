@@ -13,22 +13,35 @@
         const headers = new Headers();
         headers.append('Authorization', 'Bearer ' + localStorage.getItem('access_token'));
     </script>
+    {% else %}
+    <script>
+        console.log(localStorage.getItem('access_token'))
+        const parseJwt = (token) => {
+            try {
+                return JSON.parse(atob(token.split('.')[1]));
+            } catch (e) {
+                return null;
+            }
+        };
+        var username = parseJwt(localStorage.getItem('access_token')).username;
+    </script>
+
     {% endif %}
 </head>
 <body>
 <header>
     <nav>
-        <ul class="nav-ul">
-            <li class="nav-li"><a class="nav-a" href="/">Home</a></li>
+        <ul>
+            <li><a class="nav-a" href="/">Home</a></li>
             {% if access_token %}
-            <li class="nav-li"><a class="nav-a" href="/auth/logout">Logout</a></li>
-<!--            <li class="nav-li" style="float: right"><a>{{ username }}</a></li>-->
+            <li><a href="/auth/logout">Logout</a></li>
+            <li style="float: right"><a>{{ username }}</a></li>
             {% else %}
-            <li class="nav-li"><a class="nav-a" href="/auth/register">Register</a></li>
-            <li class="nav-li"><a class="nav-a" href="/auth/login">Login</a></li>
+            <li><a href="/auth/register">Register</a></li>
+            <li><a href="/auth/login">Login</a></li>
             {% endif %}
             {% if '/disks/'in request.path %}
-            <li class="nav-li"><a class="nav-a" href="/disks">Disks</a></li>
+            <li><a href="/disks">Disks</a></li>
             {% endif %}
         </ul>
     </nav>

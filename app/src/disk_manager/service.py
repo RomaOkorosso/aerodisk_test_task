@@ -2,6 +2,7 @@ import platform
 import subprocess
 import json
 
+from app.src.base.exceptions import CommandRun
 from logger import logger
 
 
@@ -18,6 +19,7 @@ class DiskService:
             logger.log(
                 f"Error while running command: {_} with params command={command}, shell={shell}"
             )
+            raise CommandRun(_)
         output: str = stdout.decode("utf-8")
         return output
 

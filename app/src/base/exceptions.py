@@ -95,3 +95,7 @@ class WeakPassword(Exception):
 
 class Unauthorized(Exception):
     pass
+
+
+class CommandRun(Exception):
+    pass
