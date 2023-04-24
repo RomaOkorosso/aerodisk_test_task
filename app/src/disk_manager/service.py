@@ -15,11 +15,12 @@ class DiskService:
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell
         )
         stdout, _ = process.communicate()
-        if _ is not None:
+        _ = str(_.decode("utf-8"))
+        if _ != "":
             logger.log(
-                f"Error while running command: {_} with params command={command}, shell={shell}"
+                f"Error {_} while running command with params command={command}, shell={shell}"
             )
-            raise CommandRun(_)
+            raise CommandRun(f"Error while running command: {_} with params command={command}, shell={shell}")
         output: str = stdout.decode("utf-8")
         return output
 
