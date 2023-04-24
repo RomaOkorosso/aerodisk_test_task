@@ -104,7 +104,7 @@ async def format_disk(
     if platform.system() == "Windows":
         cmd = ["format", f"{db_disk.name}:\\", "/fs:NTFS", "/q"]
         try:
-            disk_service.run_shell_command(cmd, shell=True)
+            disk_service.run_shell_command(cmd)
         except CommandRun as err:
             context = {
                 "request": request,
@@ -169,8 +169,6 @@ async def umount_disk(
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
         return templates.TemplateResponse("error.html", context)
 
-    shell = False
-
     if platform.system() == "Windows":
         # Get the drive letter from the mountpoint
         drive_letter = db_disk.mountpoint.split(":")[0]
@@ -185,13 +183,12 @@ async def umount_disk(
 
         # Unmount the disk
         cmd = ["mountvol", drive_letter + ":", "/p"]
-        shell = True
     else:
         # Unmount the disk
         cmd = ["sudo", "umount", db_disk.mountpoint]
 
     try:
-        disk_service.run_shell_command(cmd, shell)
+        disk_service.run_shell_command(cmd)
     except CommandRun as err:
         context = {
             "request": request,

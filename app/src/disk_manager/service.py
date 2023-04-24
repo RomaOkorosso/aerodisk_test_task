@@ -1,3 +1,4 @@
+import datetime
 import platform
 import subprocess
 import json
@@ -8,24 +9,26 @@ from logger import logger
 
 class DiskService:
     @staticmethod
-    def run_shell_command(command: str | list[str], shell: bool = False) -> str:
+    def run_shell_command(command: str | list[str]) -> str:
+        logger.log(f"{datetime.datetime.now()} - command: {command}")
         if type(command) is list:
             command = "".join(c for c in command)
         process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=shell
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
         )
         stdout, _ = process.communicate()
         _ = str(_.decode("utf-8"))
         if _ != "":
             logger.log(
-                f"Error {_} while running command with params command={command}, shell={shell}"
+                f"Error {_} while running command with params command={command}"
             )
-            raise CommandRun(f"Error while running command: {_} with params command={command}, shell={shell}")
+            raise CommandRun(f"Error while running command: {_} with params command={command}")
         output: str = stdout.decode("utf-8")
         return output
 
     @staticmethod
-    def convert_size_to_mb(size_str):
+    def convert_size_to_mb(size_str: str):
+        size_str = size_str.replace(",", ".")
         size = float(size_str[:-1])
         unit = size_str[-1].upper()
         if unit == "G":
@@ -38,7 +41,7 @@ class DiskService:
     def get_win_disks():
         disks = []
         command = "wmic logicaldisk get caption,size,filesystem,volumename"
-        output = disk_service.run_shell_command(command, shell=True)
+        output = disk_service.run_shell_command(command)
         lines = output.strip().split("\n")[1:]
         for line in lines:
             values = line.split()
