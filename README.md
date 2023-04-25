@@ -70,3 +70,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Contact
 
 Created by [@RomaOkorosso](https://github.com/RomaOkorosso)
+
+### Tests
+
+For running tests you can use:
+
+1. tests:
+   ```shell
+   pytest test.py
+   ```
+2. unit-tests:
+   ```shell
+   python -m unitest unit_test.py
+   ```
+
