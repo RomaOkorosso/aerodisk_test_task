@@ -79,15 +79,15 @@ class DiskService:
 
     @staticmethod
     async def get_disks():
-        logger.log("Get disks")
+        logger.log(f"{datetime.datetime.now()} - Get disks")
         disks = []
         if platform.system() == "Windows":
             disks = disk_service.get_win_disks()
         elif platform.system() == "Linux":
             disks = disk_service.get_linux_disks()
         else:
-            logger.log("Unknown OS")
-        logger.log(f"Disks: {disks}")
+            logger.log(f"{datetime.datetime.now()} - Unknown OS")
+        logger.log(f"{datetime.datetime.now()} - Disks: {disks}")
 
         return disks
 
