@@ -14,14 +14,18 @@ class DiskService:
         if type(command) is str:
             command = command.split(" ")
         process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, text=True
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            shell=False,
+            text=True,
         )
         stdout, _ = process.communicate()
         if _ != "":
-            logger.log(
-                f"Error {_} while running command with params command={command}"
+            logger.log(f"Error {_} while running command with params command={command}")
+            raise CommandRun(
+                f"Error while running command: {_} with params command={command}"
             )
-            raise CommandRun(f"Error while running command: {_} with params command={command}")
 
         return stdout.strip()
 

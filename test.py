@@ -26,7 +26,6 @@ def test_run_shell_command():
     #     DiskService.run_shell_command("nonexistent_command")
 
 
-
 # Тест для метода convert_size_to_mb
 def test_convert_size_to_mb():
     assert DiskService.convert_size_to_mb("10M") == 10
@@ -62,18 +61,26 @@ def test_get_linux_disks():
 @patch("app.src.disk_manager.service.DiskService.get_win_disks")
 @patch("app.src.disk_manager.service.DiskService.get_linux_disks")
 async def test_get_disks(mock_linux_disks, mock_win_disks):
-    mock_win_disks.return_value = [{"name": "C:", "size": 1024, "filesystem": "NTFS", "mountpoint": ""}]
-    mock_linux_disks.return_value = [{"name": "sda", "size": 1024, "filesystem": "ext4", "mountpoint": "/"}]
+    mock_win_disks.return_value = [
+        {"name": "C:", "size": 1024, "filesystem": "NTFS", "mountpoint": ""}
+    ]
+    mock_linux_disks.return_value = [
+        {"name": "sda", "size": 1024, "filesystem": "ext4", "mountpoint": "/"}
+    ]
 
     with patch.object(platform, "system", return_value="Windows"):
         disks = await DiskService.get_disks()
         assert len(disks) > 0
-        assert disks == [{"name": "C:", "size": 1024, "filesystem": "NTFS", "mountpoint": ""}]
+        assert disks == [
+            {"name": "C:", "size": 1024, "filesystem": "NTFS", "mountpoint": ""}
+        ]
 
     with patch.object(platform, "system", return_value="Linux"):
         disks = await DiskService.get_disks()
         assert len(disks) > 0
-        assert disks == [{"name": "sda", "size": 1024, "filesystem": "ext4", "mountpoint": "/"}]
+        assert disks == [
+            {"name": "sda", "size": 1024, "filesystem": "ext4", "mountpoint": "/"}
+        ]
 
     with patch.object(platform, "system", return_value="Unknown"):
         disks = await DiskService.get_disks()

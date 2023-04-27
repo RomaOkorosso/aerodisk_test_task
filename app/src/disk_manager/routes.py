@@ -27,9 +27,9 @@ async def get_access_token_from_cookies(request: Request):
 
 @router.get("/disks", response_class=HTMLResponse)
 async def get_disks_view(
-        request: Request,
-        token: str = Depends(auth_service.is_user_authed),
-        session: AsyncSession = Depends(get_session),
+    request: Request,
+    token: str = Depends(auth_service.is_user_authed),
+    session: AsyncSession = Depends(get_session),
 ):
     logger.log(f"{datetime.now()} - Get disks view")
     disks = await crud_disk.get_all(db=session)
@@ -40,17 +40,20 @@ async def get_disks_view(
 
 @router.post("/disks/new")
 async def create_disk(
-        request: Request,
-        disk: DiskCreate,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk: DiskCreate,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log("{datetime.now()} - Create disk")
     db_disk = await crud_disk.get_by_name(session=session, name=disk.name)
 
     if db_disk:
         # Вместо возвращения HTML-ответа возвращаем JSON-ответ с кодом ошибки и сообщением
-        return JSONResponse(content={"error": f"Disk with name '{disk.name}' already exists"}, status_code=400)
+        return JSONResponse(
+            content={"error": f"Disk with name '{disk.name}' already exists"},
+            status_code=400,
+        )
 
     disk.mountpoint = disk.name
     new_disk: Disk = await crud_disk.create(db=session, obj_in=disk)
@@ -62,10 +65,10 @@ async def create_disk(
 
 @router.get("/disks/{disk_id}", response_class=HTMLResponse)
 async def get_disk_view(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Get disk view with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
@@ -78,10 +81,10 @@ async def get_disk_view(
 
 @router.post("/disks/{disk_id}/update")
 async def update_disk(
-        request: Request,
-        disk_id: int,
-        disk: DiskUpdate,
-        session: AsyncSession = Depends(get_session),
+    request: Request,
+    disk_id: int,
+    disk: DiskUpdate,
+    session: AsyncSession = Depends(get_session),
 ):
     logger.log(f"{datetime.now()} - Update disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
@@ -96,7 +99,7 @@ async def update_disk(
 
 @router.post("/disks/{disk_id}/format")
 async def format_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     logger.log(f"{datetime.now()} - Format disk with id '{disk_id}'")
     db_disk: Disk = await crud_disk.get(session, disk_id)
@@ -111,28 +114,14 @@ async def format_disk(
         except CommandRun as err:
             context = {
                 "request": request,
-                "error": f"Disk with id '{disk_id}' not formatted, err: {err}"
+                "error": f"Disk with id '{disk_id}' not formatted, err: {err}",
             }
             return templates.TemplateResponse("error.html", context)
-
-    # Unix disk formatting
-    else:
-        cmd = ["sudo", "mkfs.ext4", db_disk.name]
-        try:
-            disk_service.run_shell_command(cmd)
-        except CommandRun as err:
-            context = {
-                "request": request,
-                "error": f"disk was not formatted, err: {err}"
-            }
-            return templates.TemplateResponse("error.html", context)
-
-    return RedirectResponse(url=f"/disks/{disk_id}")
 
 
 @router.post("/disks/{disk_id}/mount")
 async def mount_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     logger.log(f"{datetime.now()} - Mount disk with id '{disk_id}'")
 
@@ -153,7 +142,7 @@ async def mount_disk(
     except CommandRun as err:
         context = {
             "request": request,
-            "error": f"Disk with id '{disk_id}' not mounted, err: {err}"
+            "error": f"Disk with id '{disk_id}' not mounted, err: {err}",
         }
         return templates.TemplateResponse("error.html", context)
 
@@ -164,7 +153,7 @@ async def mount_disk(
 
 @router.post("/disks/{disk_id}/umount")
 async def umount_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     logger.log(f"{datetime.now()} - Umount disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
@@ -195,7 +184,7 @@ async def umount_disk(
     except CommandRun as err:
         context = {
             "request": request,
-            "error": f"Disk with id '{disk_id}' not unmounted, err: {err}"
+            "error": f"Disk with id '{disk_id}' not unmounted, err: {err}",
         }
         return templates.TemplateResponse("error.html", context)
 
@@ -204,7 +193,7 @@ async def umount_disk(
 
 @router.post("/disks/{disk_id}/wipefs")
 async def wipefs_disk(
-        request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -218,7 +207,7 @@ async def wipefs_disk(
     except CommandRun as err:
         context = {
             "request": request,
-            "error": f"Disk with id '{disk_id}' not wiped, err: {err}"
+            "error": f"Disk with id '{disk_id}' not wiped, err: {err}",
         }
         return templates.TemplateResponse("error.html", context)
 
