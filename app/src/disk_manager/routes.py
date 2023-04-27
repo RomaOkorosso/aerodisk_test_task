@@ -2,10 +2,11 @@ import platform
 import string
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Form
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
+from fastapi.encoders import jsonable_encoder
 
 from app.src.base.exceptions import CommandRun
 from logger import logger
@@ -37,7 +38,7 @@ async def get_disks_view(
     return templates.TemplateResponse("disks.html", context)
 
 
-@router.post("disks/new")
+@router.post("/disks/new")
 async def create_disk(
         request: Request,
         disk: DiskCreate,
@@ -46,16 +47,17 @@ async def create_disk(
 ):
     logger.log("{datetime.now()} - Create disk")
     db_disk = await crud_disk.get_by_name(session=session, name=disk.name)
+
     if db_disk:
-        context = {
-            "request": request,
-            "error": f"Disk with name '{disk.name}' already exists",
-        }
-        return templates.TemplateResponse("error.html", context)
+        # Вместо возвращения HTML-ответа возвращаем JSON-ответ с кодом ошибки и сообщением
+        return JSONResponse(content={"error": f"Disk with name '{disk.name}' already exists"}, status_code=400)
+
     disk.mountpoint = disk.name
     new_disk: Disk = await crud_disk.create(db=session, obj_in=disk)
     logger.log(f"{datetime.now()} - New disk: {new_disk.__dict__}")
-    return RedirectResponse(url=f"/disks/{new_disk.id}/mount", status_code=303)
+
+    # Возвращаем JSON-ответ с ID созданного диска и кодом успешного выполнения
+    return JSONResponse(content=jsonable_encoder(new_disk), status_code=201)
 
 
 @router.get("/disks/{disk_id}", response_class=HTMLResponse)
@@ -86,9 +88,10 @@ async def update_disk(
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
         return templates.TemplateResponse("error.html", context)
-    updated_disk = await crud_disk.update(session, db_obj=db_disk, obj_in=disk)
+    print(f"updated disk: {update_disk}")
+    updated_disk = await crud_disk.update_disk(session, db_obj=db_disk, obj_in=disk)
     logger.log(f"{datetime.now()} - Updated disk: {updated_disk.__dict__}")
-    return RedirectResponse(url=f"/disks/{disk_id}")
+    return JSONResponse(content={"message": "Disk updated", "disk": updated_disk})
 
 
 @router.post("/disks/{disk_id}/format")
@@ -120,7 +123,7 @@ async def format_disk(
         except CommandRun as err:
             context = {
                 "request": request,
-                "error": f"disk was nor formatted, err: {err}"
+                "error": f"disk was not formatted, err: {err}"
             }
             return templates.TemplateResponse("error.html", context)
 
@@ -215,7 +218,7 @@ async def wipefs_disk(
     except CommandRun as err:
         context = {
             "request": request,
-            "error": f"Disk with id '{disk_id}' not wipefs, err: {err}"
+            "error": f"Disk with id '{disk_id}' not wiped, err: {err}"
         }
         return templates.TemplateResponse("error.html", context)
 

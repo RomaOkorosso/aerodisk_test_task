@@ -43,21 +43,26 @@
         const size = document.querySelector('#size').value;
 
         const token = localStorage.getItem('access_token');
-        const headers = {'Authorization': `Bearer ${token}`};
+        const headers = {
+            'Authorization': 'Bearer ${token}',
+            'Content-Type': 'application/json'
+        };
         const body = JSON.stringify({'name': name, 'size': size});
-
-        const response = await fetch('/disks/new/', {
+        console.log("body:", body)
+        const response = await fetch('/disks/new', {
             method: 'POST',
             headers: headers,
             body: body
         });
 
-        // if (response.ok) {
-        //     // Редирект на страницу дисков или обновление списка дисков на текущей странице
-        //     window.location.href = '/disks';
-        // } else {
-        //     // Обработка ошибки
-        // }
+        if (response.ok) {
+            // Редирект на страницу дисков или обновление списка дисков на текущей странице
+            window.location.href = '/disks';
+        } else {
+            const errorData = await response.json();
+            // Обработка ошибки, например, вывод сообщения об ошибке
+            alert(errorData.error);
+        }
     });
 </script>
 

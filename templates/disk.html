@@ -13,7 +13,7 @@
 </div>
 
 <div class="div-form">
-    <form onsubmit="updateDisk(event)">
+    <form onsubmit="updateDisk(event, {{ disk.id }})">
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" value="{{ disk.name }}">
         <br>
@@ -25,24 +25,24 @@
 </div>
 
 <script>
-    function updateDisk(event) {
-        const disk = disk;
+    function updateDisk(event, diskId) {
         event.preventDefault();
         const name = document.getElementById("name").value;
         const size = document.getElementById("size").value;
-        const diskId = disk.id;
+        diskId = parseInt(diskId)
+        const body = JSON.stringify({disk_id: diskId, name: name, size: size})
 
-        fetch(`/disks/${diskId}/update`, {
+        fetch('/disks/${diskId}/update', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                "Authorization": `Bearer ${localStorage.getItem('access_token')}`
+                "Authorization": "Bearer ${localStorage.getItem('access_token')}"
             },
-            body: JSON.stringify({name: name, size: size})
+            body: body
         })
             .then(response => {
                 if (response.ok) {
-                    window.location.href = `/disks/${diskId}`;
+                    window.location.href = '/disks/${diskId}';
                 } else {
                     throw new Error("Failed to update disk");
                 }

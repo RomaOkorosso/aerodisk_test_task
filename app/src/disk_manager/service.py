@@ -11,20 +11,19 @@ class DiskService:
     @staticmethod
     def run_shell_command(command: str | list[str]) -> str:
         logger.log(f"{datetime.datetime.now()} - command: {command}")
-        if type(command) is list:
-            command = "".join(c for c in command)
+        if type(command) is str:
+            command = command.split(" ")
         process = subprocess.Popen(
-            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+            command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False, text=True
         )
         stdout, _ = process.communicate()
-        _ = str(_.decode("utf-8"))
         if _ != "":
             logger.log(
                 f"Error {_} while running command with params command={command}"
             )
             raise CommandRun(f"Error while running command: {_} with params command={command}")
-        output: str = stdout.decode("utf-8")
-        return output
+
+        return stdout.strip()
 
     @staticmethod
     def convert_size_to_mb(size_str: str):
@@ -60,7 +59,8 @@ class DiskService:
         disks = []
         command = "lsblk -J"
         output = disk_service.run_shell_command(command)
-
+        if output == "":
+            return []
         json_output = json.loads(output)
         for device in json_output["blockdevices"]:
             if device["type"] == "disk":
