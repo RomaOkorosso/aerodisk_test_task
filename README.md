@@ -15,7 +15,7 @@ To install AeroDisk, follow these steps:
     cp .env.example .env
     ```
 
-If you prefer docker (! may not work correctly)
+#### If you prefer docker (! do not working now !)
 
 3. Run Docker containers:
    CHANGE `POSTGRES_HOST=127.0.0.1` to `POSTGRES_HOST=db` in .env
@@ -24,13 +24,13 @@ If you prefer docker (! may not work correctly)
     ```
 4. Visit `http://localhost:{APP_PORT}` in your browser.
 
-For non-docker usage
+#### For non-docker usage
 
 3. Run database
 
-```bash
-docker-compose up -d db
-```
+   ```bash
+   docker-compose up -d db
+   ```
 
 4. Install poetry and dependencies
 
@@ -44,15 +44,15 @@ docker-compose up -d db
    ```
 5. Wait while db is up, then
 
-```bash
-sh entrypoint.sh
-```
+   ```bash
+   sh entrypoint.sh
+   ```
 
 6. Up uvicorn
 
-```bash
-uvicorn main:app --reload --port 8000 --host 0.0.0.0
-```
+   ```bash
+   uvicorn main:app --reload --port 8000 --host 0.0.0.0
+   ```
 
 ### Built With
 
