@@ -45,7 +45,7 @@ async def create_disk(
     session: AsyncSession = Depends(get_session),
     token=Depends(auth_service.is_user_authed),
 ):
-    logger.log("{datetime.now()} - Create disk")
+    logger.log(f"{datetime.now()} - Create disk: {disk.dict()}")
     db_disk = await crud_disk.get_by_name(session=session, name=disk.name)
 
     if db_disk:
@@ -55,7 +55,6 @@ async def create_disk(
             status_code=400,
         )
 
-    disk.mountpoint = disk.name
     new_disk: Disk = await crud_disk.create(db=session, obj_in=disk)
     logger.log(f"{datetime.now()} - New disk: {new_disk.__dict__}")
 
@@ -108,15 +107,20 @@ async def format_disk(
         return templates.TemplateResponse("error.html", context)
     # Windows disk formatting
     if platform.system() == "Windows":
-        cmd = ["format", f"{db_disk.name}:\\", "/fs:NTFS", "/q"]
-        try:
-            disk_service.run_shell_command(cmd)
-        except CommandRun as err:
-            context = {
-                "request": request,
-                "error": f"Disk with id '{disk_id}' not formatted, err: {err}",
-            }
-            return templates.TemplateResponse("error.html", context)
+        format_cmd = ["format", db_disk.name, "/FS:NTFS", "/Q"]
+    else:
+        format_cmd = ["sudo", "mkfs.ext4", db_disk.name]
+
+    try:
+        disk_service.run_shell_command(format_cmd)
+    except CommandRun as err:
+        context = {
+            "request": request,
+            "error": f"Disk with id '{disk_id}' not formatted, err: {err}",
+        }
+        return templates.TemplateResponse("error.html", context)
+
+    return templates.TemplateResponse("disks.html")
 
 
 @router.post("/disks/{disk_id}/mount")
@@ -133,12 +137,12 @@ async def mount_disk(
 
     # Mount disk
     if platform.system() == "Windows":
-        cmd = ["mountvol", db_disk.name, db_disk.mountpoint]
+        mount_cmd = ["mountvol", db_disk.name, db_disk.mountpoint]
     else:
-        cmd = ["sudo", "mount", db_disk.name, db_disk.mountpoint]
+        mount_cmd = ["sudo", "mount", db_disk.name, db_disk.mountpoint, "-o", f"size={db_disk.size}M"]
 
     try:
-        disk_service.run_shell_command(cmd)
+        disk_service.run_shell_command(mount_cmd)
     except CommandRun as err:
         context = {
             "request": request,
@@ -146,12 +150,12 @@ async def mount_disk(
         }
         return templates.TemplateResponse("error.html", context)
 
-    logger.log(f"{datetime.now()} - disk {disk_id} was successfully mounted")
+    logger.log(f"{datetime.now()} - disk {disk_id} was successfully formatted and mounted")
 
     return RedirectResponse(url=f"/disks/{disk_id}")
 
 
-@router.post("/disks/{disk_id}/umount")
+@router.post("/disks/{disk_id}/unmount")
 async def umount_disk(
     request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
 ):
@@ -177,7 +181,7 @@ async def umount_disk(
         cmd = ["mountvol", drive_letter + ":", "/p"]
     else:
         # Unmount the disk
-        cmd = ["sudo", "umount", db_disk.mountpoint]
+        cmd = ["sudo", "umount", "-l", db_disk.mountpoint]
 
     try:
         disk_service.run_shell_command(cmd)
@@ -187,20 +191,26 @@ async def umount_disk(
             "error": f"Disk with id '{disk_id}' not unmounted, err: {err}",
         }
         return templates.TemplateResponse("error.html", context)
+    logger.log(f"{datetime.now()} - delete disk, disk.id={disk_id}")
+    await crud_disk.remove(db=session, id=db_disk.id)
+    logger.log(f"{datetime.now()} - disk deleted")
 
     return RedirectResponse(url=f"/disks/{disk_id}")
 
 
 @router.post("/disks/{disk_id}/wipefs")
 async def wipefs_disk(
-    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+        request: Request,
+        disk_id: int,
+        session: AsyncSession = Depends(get_session),
+        token: str = Depends(auth_service.is_user_authed)
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
         return templates.TemplateResponse("error.html", context)
     # Wipe disk header
-    cmd = ["sudo", "wipefs", "-a", db_disk.path]
+    cmd = ["sudo", "wipefs", "-a", db_disk.mountpoint]
 
     try:
         disk_service.run_shell_command(cmd)
@@ -211,4 +221,9 @@ async def wipefs_disk(
         }
         return templates.TemplateResponse("error.html", context)
 
-    return RedirectResponse(url=f"/disks/{disk_id}")
+    context = {
+        "request": request,
+        "disks": await disk_service.get_disks(),
+        "access_token": token
+    }
+    return templates.TemplateResponse("disks.html", context=context)

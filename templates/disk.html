@@ -29,8 +29,10 @@
         event.preventDefault();
         const name = document.getElementById("name").value;
         const size = document.getElementById("size").value;
-        diskId = parseInt(diskId)
+        diskId = parseInt(diskId);
+        {#diskId = diskId.toString();#}
         const body = JSON.stringify({disk_id: diskId, name: name, size: size})
+        console.log(body)
 
         fetch('/disks/${diskId}/update', {
             method: "POST",
