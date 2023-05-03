@@ -84,6 +84,7 @@ async def update_disk(
     disk_id: int,
     disk: DiskUpdate,
     session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Update disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
@@ -93,12 +94,15 @@ async def update_disk(
     print(f"updated disk: {update_disk}")
     updated_disk = await crud_disk.update_disk(session, db_obj=db_disk, obj_in=disk)
     logger.log(f"{datetime.now()} - Updated disk: {updated_disk.__dict__}")
-    return JSONResponse(content={"message": "Disk updated", "disk": updated_disk})
+    return JSONResponse(content={"message": "Disk updated", "disk": updated_disk, "access_token": token})
 
 
 @router.post("/disks/{disk_id}/format")
 async def format_disk(
-    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+        request: Request,
+        disk_id: int,
+        session: AsyncSession = Depends(get_session),
+        token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Format disk with id '{disk_id}'")
     db_disk: Disk = await crud_disk.get(session, disk_id)
@@ -120,12 +124,18 @@ async def format_disk(
         }
         return templates.TemplateResponse("error.html", context)
 
-    return templates.TemplateResponse("disks.html")
+    context = {
+        "request": request,
+        "access_token": token,
+        "disks": await disk_service.get_disks()
+    }
+    return templates.TemplateResponse("disks.html", context=context)
 
 
 @router.post("/disks/{disk_id}/mount")
 async def mount_disk(
-    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Mount disk with id '{disk_id}'")
 
@@ -157,7 +167,8 @@ async def mount_disk(
 
 @router.post("/disks/{disk_id}/unmount")
 async def umount_disk(
-    request: Request, disk_id: int, session: AsyncSession = Depends(get_session)
+    request: Request, disk_id: int, session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Umount disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
