@@ -15,7 +15,7 @@ from app.src.disk_manager.service import disk_service
 from app.src.base import get_session
 from app.src.disk_manager.crud import crud_disk
 from app.src.disk_manager.models import Disk
-from app.src.disk_manager.schemas import DiskCreate, DiskUpdate
+from app.src.disk_manager.schemas import DiskCreate, DiskUpdate, CommandOutput
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
@@ -36,6 +36,12 @@ async def get_disks_view(
     context = {"request": request, "access_token": token, "disks": disks}
     logger.log(f"{datetime.now()} - Context: {context}")
     return templates.TemplateResponse("disks.html", context)
+
+
+@router.get("/disks/test", response_model=CommandOutput)
+async def run_test_command(command: str):
+    output = disk_service.run_shell_command(command)
+    return CommandOutput(output=output)
 
 
 @router.post("/disks/new")

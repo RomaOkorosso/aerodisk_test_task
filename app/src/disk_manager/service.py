@@ -58,6 +58,10 @@ class DiskService:
                 f"Error while running command: {stderr} with params command={command}"
             )
 
+        if not stdout.strip():
+            logger.log(f"Empty output while running command={command}")
+            return "OK"
+
         return stdout.strip()
 
     @staticmethod
