@@ -44,6 +44,9 @@ class DiskService:
                 shell=True,
                 text=True,
             )
+        logger.log(f"{datetime.datetime.now()} - {command} returncode: {process.returncode}")
+        if ("mount" in command or "umount" in command) and (process.returncode == 0 or process.returncode == 64):
+            return "OK"
 
         stdout, stderr = process.communicate()
 
