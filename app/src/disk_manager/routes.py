@@ -94,15 +94,17 @@ async def update_disk(
     print(f"updated disk: {update_disk}")
     updated_disk = await crud_disk.update_disk(session, db_obj=db_disk, obj_in=disk)
     logger.log(f"{datetime.now()} - Updated disk: {updated_disk.__dict__}")
-    return JSONResponse(content={"message": "Disk updated", "disk": updated_disk, "access_token": token})
+    return JSONResponse(
+        content={"message": "Disk updated", "disk": updated_disk, "access_token": token}
+    )
 
 
 @router.post("/disks/{disk_id}/format")
 async def format_disk(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Format disk with id '{disk_id}'")
     db_disk: Disk = await crud_disk.get(session, disk_id)
@@ -127,14 +129,16 @@ async def format_disk(
     context = {
         "request": request,
         "access_token": token,
-        "disks": await disk_service.get_disks()
+        "disks": await disk_service.get_disks(),
     }
     return templates.TemplateResponse("disks.html", context=context)
 
 
 @router.post("/disks/{disk_id}/mount")
 async def mount_disk(
-    request: Request, disk_id: int, session: AsyncSession = Depends(get_session),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
     token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Mount disk with id '{disk_id}'")
@@ -149,7 +153,14 @@ async def mount_disk(
     if platform.system() == "Windows":
         mount_cmd = ["mountvol", db_disk.name, db_disk.mountpoint]
     else:
-        mount_cmd = ["sudo", "mount", db_disk.name, db_disk.mountpoint, "-o", f"size={db_disk.size}M"]
+        mount_cmd = [
+            "sudo",
+            "mount",
+            db_disk.name,
+            db_disk.mountpoint,
+            "-o",
+            f"size={db_disk.size}M",
+        ]
 
     try:
         disk_service.run_shell_command(mount_cmd)
@@ -160,14 +171,18 @@ async def mount_disk(
         }
         return templates.TemplateResponse("error.html", context)
 
-    logger.log(f"{datetime.now()} - disk {disk_id} was successfully formatted and mounted")
+    logger.log(
+        f"{datetime.now()} - disk {disk_id} was successfully formatted and mounted"
+    )
 
     return RedirectResponse(url=f"/disks/{disk_id}")
 
 
 @router.post("/disks/{disk_id}/unmount")
 async def umount_disk(
-    request: Request, disk_id: int, session: AsyncSession = Depends(get_session),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
     token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Umount disk with id '{disk_id}'")
@@ -211,10 +226,10 @@ async def umount_disk(
 
 @router.post("/disks/{disk_id}/wipefs")
 async def wipefs_disk(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token: str = Depends(auth_service.is_user_authed)
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token: str = Depends(auth_service.is_user_authed),
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -235,6 +250,6 @@ async def wipefs_disk(
     context = {
         "request": request,
         "disks": await disk_service.get_disks(),
-        "access_token": token
+        "access_token": token,
     }
     return templates.TemplateResponse("disks.html", context=context)

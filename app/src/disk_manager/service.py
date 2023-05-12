@@ -51,7 +51,9 @@ class DiskService:
         stdout, stderr = process.communicate()
 
         if stderr != "":
-            logger.log(f"Error {stderr} while running command with params command={command}")
+            logger.log(
+                f"Error {stderr} while running command with params command={command}"
+            )
             raise CommandRun(
                 f"Error while running command: {stderr} with params command={command}"
             )
