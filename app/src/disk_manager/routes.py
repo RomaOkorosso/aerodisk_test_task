@@ -99,7 +99,7 @@ async def update_disk(
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
         return templates.TemplateResponse("error.html", context)
     print(f"updated disk: {update_disk}")
-    updated_disk = await crud_disk.update_disk(session, db_obj=db_disk, obj_in=disk)
+    updated_disk = await crud_disk.update(session, db_obj=db_disk, obj_in=disk)
     logger.log(f"{datetime.now()} - Updated disk: {updated_disk.__dict__}")
     return JSONResponse(
         content={"message": "Disk updated", "disk": updated_disk, "access_token": token}
@@ -122,7 +122,9 @@ async def format_disk(
     if platform.system() == "Windows":
         format_cmd = ["format", db_disk.name, "/FS:NTFS", "/Q"]
     else:
-        format_cmd = ["sudo", "mkfs.ext4", "-F", f"/dev/{db_disk.name}"]
+        # format_cmd = ["sudo", "mkfs.ext4", "-F", f"/dev/{db_disk.name}"]
+        format_cmd = ["echo", "'hi'"]
+        sh.mkfs("-F", f"/dev/{db_disk.name}")
 
 
     try:
@@ -215,7 +217,7 @@ async def umount_disk(
         cmd = ["mountvol", drive_letter + ":", "/p"]
     else:
         # Unmount the disk
-        cmd = ["sudo", "umount", "-l", f"/dev/{db_disk.name}"]
+        cmd = ["sudo", "umount", "-fl", f"/dev/{db_disk.name}"]
 
     try:
         disk_service.run_shell_command(cmd)
