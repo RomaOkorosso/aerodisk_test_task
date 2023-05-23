@@ -121,7 +121,7 @@ async def format_disk(
     if platform.system() == "Windows":
         format_cmd = ["format", db_disk.name, "/FS:NTFS", "/Q"]
     else:
-        format_cmd = ["sudo", "mkfs.ext4", db_disk.name]
+        format_cmd = ["sudo", "mkfs.ext4", f"/dev/{db_disk.name}"]
 
     try:
         disk_service.run_shell_command(format_cmd)
@@ -162,7 +162,7 @@ async def mount_disk(
         mount_cmd = [
             "sudo",
             "mount",
-            db_disk.name,
+            f"/dev/{db_disk.name}",
             db_disk.mountpoint,
             "-o",
             f"size={db_disk.size}M",
@@ -213,7 +213,7 @@ async def umount_disk(
         cmd = ["mountvol", drive_letter + ":", "/p"]
     else:
         # Unmount the disk
-        cmd = ["sudo", "umount", "-l", db_disk.mountpoint]
+        cmd = ["sudo", "umount", "-l", f"/dev/{db_disk.name}"]
 
     try:
         disk_service.run_shell_command(cmd)
@@ -242,7 +242,7 @@ async def wipefs_disk(
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
         return templates.TemplateResponse("error.html", context)
     # Wipe disk header
-    cmd = ["sudo", "wipefs", "-a", db_disk.mountpoint]
+    cmd = ["sudo", "wipefs", "-a", f"/dev/{db_disk.name}"]
 
     try:
         disk_service.run_shell_command(cmd)
