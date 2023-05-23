@@ -26,6 +26,7 @@ gunicorn = {extras = ["uvicorn"], version = "^20.1.0"}
 pytest = "^7.3.1"
 psycopg2-binary = "^2.9.6"
 pytest-asyncio = "^0.21.0"
+sh = "^2.0.4"
 
 
 [build-system]

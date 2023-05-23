@@ -1,6 +1,7 @@
 import platform
 import string
 from datetime import datetime
+import sh
 
 from fastapi import APIRouter, Depends, Request, Form
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -122,6 +123,7 @@ async def format_disk(
         format_cmd = ["format", db_disk.name, "/FS:NTFS", "/Q"]
     else:
         format_cmd = ["sudo", "mkfs.ext4", "-F", f"/dev/{db_disk.name}"]
+
 
     try:
         disk_service.run_shell_command(format_cmd)
