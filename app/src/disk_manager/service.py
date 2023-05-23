@@ -2,6 +2,7 @@ import datetime
 import platform
 import subprocess
 import json
+from typing import Union
 
 from app.src.base import settings
 from app.src.base.exceptions import CommandRun
@@ -10,7 +11,7 @@ from logger import logger
 
 class DiskService:
     @staticmethod
-    def run_shell_command(command: str | list[str]) -> str:
+    def run_shell_command(command: Union[str, list[str]]) -> str:
         sudo_password = settings.SUDO_PASSWORD
         logger.log(f"{datetime.datetime.now()} - command: {command}")
 
