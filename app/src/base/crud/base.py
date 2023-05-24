@@ -54,7 +54,7 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db: AsyncSession,
         *,
         db_obj: ModelType,
-        obj_in: Union[UpdateSchemaType, Dict[str, Any]]
+        obj_in: Union[UpdateSchemaType, Dict[str, Any]],
     ) -> ModelType:
         obj_data = jsonable_encoder(db_obj)
         if isinstance(obj_in, dict):
@@ -69,8 +69,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await db.refresh(db_obj)
         return db_obj
 
-    async def remove(self, db: AsyncSession, *, id: int) -> ModelType:
-        obj = (await db.execute(db.query(self.model).get(id))).scalar_one_or_none()
+    async def remove(self, db: AsyncSession, *, id: int) -> ModelType or None:
+        try:
+            obj = (await db.execute(db.query(self.model).get(id))).scalar_one()
+        except Exception as err:
+            print(err)
+            return None
         await db.delete(obj)
         await db.commit()
         return obj

@@ -2,95 +2,98 @@
 
 {% block content %}
 
-<div class="div-page-name">
-    <h1>Disks</h1>
-</div>
-{% if disks %}
-<div class="div-content-center">
-    <ul>
-        {% for disk in disks %}
-        <li>
-            <a href="/disks/{{ disk.id }}">{{ disk.name }}</a> - {{ disk.size }} MB
-            <button class="action-button" data-disk-id="{{ disk.id }}" data-action="mount">mount</button>
-            <button class="action-button" data-disk-id="{{ disk.id }}" data-action="unmount">unmount</button>
-            <button class="action-button" data-disk-id="{{ disk.id }}" data-action="format">format</button>
-            <button class="action-button" data-disk-id="{{ disk.id }}" data-action="wipefs">wipefs</button>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-<div class="div-content-center">
-    <form id="add-disk-form">
-        <label for="name">Name:</label>
-        <input type="text" id="name" name="name">
-        <br>
-        <label for="size">Size:</label>
-        <input type="text" id="size" name="size">
-        <br>
-        <label for="mountpoint">Mountpoint:</label>
-        <input type="text" id="mountpoint" name="mountpoint">
-        <br>
-        <button type="submit">Mount new disk</button>
-    </form>
-</div>
-{% else %}
-<div class="div-content-center">
-    <h1> No disks found.</h1>
-</div>
-{% endif %}
-<script>
-    const addDiskForm = document.querySelector('#add-disk-form');
-    addDiskForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const name = document.querySelector('#name').value;
-        const size = document.querySelector('#size').value;
-        const mountpoint = document.querySelector("#mountpoint").value;
-
-        const token = localStorage.getItem('access_token');
-        const headers = {
-            'Authorization': 'Bearer ${token}',
-            'Content-Type': 'application/json'
-        };
-        const body = JSON.stringify({'name': name, 'size': size, 'mountpoint': mountpoint});
-        console.log("body:", body)
-        const response = await fetch('/disks/new', {
-            method: 'POST',
-            headers: headers,
-            body: body
-        });
-
-        if (response.ok) {
-            window.location.href = '/disks';
-        } else {
-            const errorData = await response.json();
-            alert(errorData.error);
-        }
-    });
-
-    const actionButtons = document.querySelectorAll('.action-button');
-    actionButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
+    <div class="div-page-name">
+        <h1>Disks</h1>
+    </div>
+    {% if disks %}
+        <div class="div-content-center">
+            <ul>
+                {% for disk in disks %}
+                    <li>
+                        <a href="/disks/{{ disk.id }}">{{ disk.name }}</a> - {{ disk.size }} MB
+                        <button class="action-button" data-disk-id="{{ disk.id }}" data-action="mount">mount</button>
+                        <button class="action-button" data-disk-id="{{ disk.id }}" data-action="unmount">unmount
+                        </button>
+                        <button class="action-button" data-disk-id="{{ disk.id }}" data-action="format">format</button>
+                        <button class="action-button" data-disk-id="{{ disk.id }}" data-action="wipefs">wipefs</button>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="div-content-center">
+            <form id="add-disk-form">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name">
+                <br>
+                <label for="size">Size:</label>
+                <input type="text" id="size" name="size">
+                <br>
+                <label for="mountpoint">Mountpoint:</label>
+                <input type="text" id="mountpoint" name="mountpoint">
+                <br>
+                <button type="submit">Mount new disk</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="div-content-center">
+            <h1> No disks found.</h1>
+        </div>
+    {% endif %}
+    <script>
+        const addDiskForm = document.querySelector('#add-disk-form');
+        addDiskForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const diskId = button.getAttribute('data-disk-id');
-            const action = button.getAttribute('data-action');
+            const name = document.querySelector('#name').value;
+            const size = document.querySelector('#size').value;
+            const mountpoint = document.querySelector("#mountpoint").value;
 
             const token = localStorage.getItem('access_token');
             const headers = {
                 'Authorization': 'Bearer ${token}',
                 'Content-Type': 'application/json'
             };
-            const response = await fetch(`/disks/${diskId}/${action}`, {
+            const body = JSON.stringify({'name': name, 'size': size, 'mountpoint': mountpoint});
+            console.log("body:", body)
+            const response = await fetch('/disks/new', {
                 method: 'POST',
-                headers: headers
+                headers: headers,
+                body: body
             });
 
             if (response.ok) {
-                window.location.reload();
+                window.location.href = '/disks';
             } else {
                 const errorData = await response.json();
                 alert(errorData.error);
             }
         });
-    });
-</script>
+
+        const actionButtons = document.querySelectorAll('.action-button');
+        actionButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                e.preventDefault();
+                const diskId = button.getAttribute('data-disk-id');
+                const action = button.getAttribute('data-action');
+
+                const token = localStorage.getItem('access_token');
+                const headers = {
+                    'Authorization': 'Bearer ${token}',
+                    'Content-Type': 'application/json'
+                };
+                const response = await fetch(`/disks/${diskId}/${action}`, {
+                    method: 'POST',
+                    headers: headers
+                });
+
+                if (response.ok) {
+                    const res = await response.json()
+                    alert(res.alert)
+                    window.location.reload();
+                } else {
+                    const res = await response.json();
+                    alert(res.alert);
+                }
+            });
+        });
+    </script>
 {% endblock %}

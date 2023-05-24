@@ -62,13 +62,13 @@
             });
 
             if (response.ok) {
-                // Редирект на страницу дисков
+                // Redirect to disks page
                 const token = localStorage.getItem('access_token');
                 console.log(token);
                 Object.assign(headers, {'Authorization': `Bearer ${token}`});
                 window.location.href = '/disks';
             } else {
-                // Обработка ошибки
+                // throwing an error
                 console.log("error")
             }
         });

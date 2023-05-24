@@ -3,7 +3,8 @@ import string
 from datetime import datetime
 import sh
 
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, Request
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
@@ -28,9 +29,9 @@ async def get_access_token_from_cookies(request: Request):
 
 @router.get("/disks", response_class=HTMLResponse)
 async def get_disks_view(
-        request: Request,
-        token: str = Depends(auth_service.is_user_authed),
-        session: AsyncSession = Depends(get_session),
+    request: Request,
+    token: str = Depends(auth_service.is_user_authed),
+    session: AsyncSession = Depends(get_session),
 ):
     logger.log(f"{datetime.now()} - Get disks view")
     disks = await crud_disk.get_all(db=session)
@@ -47,16 +48,16 @@ async def run_test_command(command: str):
 
 @router.post("/disks/new")
 async def create_disk(
-        request: Request,
-        disk: DiskCreate,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk: DiskCreate,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Create disk: {disk.dict()}")
     db_disk = await crud_disk.get_by_name(session=session, name=disk.name)
 
     if db_disk:
-        # Вместо возвращения HTML-ответа возвращаем JSON-ответ с кодом ошибки и сообщением
+        # return json with err
         return JSONResponse(
             content={"error": f"Disk with name '{disk.name}' already exists"},
             status_code=400,
@@ -65,16 +66,16 @@ async def create_disk(
     new_disk: Disk = await crud_disk.create(db=session, obj_in=disk)
     logger.log(f"{datetime.now()} - New disk: {new_disk.__dict__}")
 
-    # Возвращаем JSON-ответ с ID созданного диска и кодом успешного выполнения
+    # return successful status with response
     return JSONResponse(content=jsonable_encoder(new_disk), status_code=201)
 
 
 @router.get("/disks/{disk_id}", response_class=HTMLResponse)
 async def get_disk_view(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Get disk view with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
@@ -87,11 +88,11 @@ async def get_disk_view(
 
 @router.post("/disks/{disk_id}/update")
 async def update_disk(
-        request: Request,
-        disk_id: int,
-        disk: DiskUpdate,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    disk: DiskUpdate,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Update disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
@@ -108,48 +109,53 @@ async def update_disk(
 
 @router.post("/disks/{disk_id}/format")
 async def format_disk(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Format disk with id '{disk_id}'")
     db_disk: Disk = await crud_disk.get(session, disk_id)
     if not db_disk:
-        context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
-        return templates.TemplateResponse("error.html", context)
+        context = {
+            "request": request,
+            "alert": f"Disk with id '{disk_id}' not found",
+            "access_token": token,
+            "disks": await disk_service.get_disks(),
+        }
+        return JSONResponse(content=context, status_code=400)
     # Windows disk formatting
     if platform.system() == "Windows":
         format_cmd = ["format", db_disk.name, "/FS:NTFS", "/Q"]
     else:
-        # format_cmd = ["sudo", "mkfs.ext4", "-F", f"/dev/{db_disk.name}"]
-        format_cmd = ["echo", "'hi'"]
-        sh.mkfs("-F", f"/dev/{db_disk.name}")
-
+        format_cmd = ["sudo", "mkfs.ext4", f"/dev/{db_disk.name}", "-F"]
 
     try:
         disk_service.run_shell_command(format_cmd)
     except CommandRun as err:
         context = {
             "request": request,
-            "error": f"Disk with id '{disk_id}' not formatted, err: {err}",
+            "access_token": token,
+            "disks": await disk_service.get_disks(),
+            "alert": f"Disk with id '{disk_id}' not formatted, err: {err}",
         }
-        return templates.TemplateResponse("error.html", context)
+        return JSONResponse(content=context, status_code=400)
 
     context = {
+        "alert": f"disk {disk_id} was formatted",
         "request": request,
         "access_token": token,
         "disks": await disk_service.get_disks(),
     }
-    return templates.TemplateResponse("disks.html", context=context)
+    return JSONResponse(content=context, status_code=200)
 
 
 @router.post("/disks/{disk_id}/mount")
 async def mount_disk(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Mount disk with id '{disk_id}'")
 
@@ -157,20 +163,20 @@ async def mount_disk(
 
     if not db_disk:
         context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
-        return templates.TemplateResponse("error.html", context)
+        return JSONResponse(
+            content={
+                "alert": f"Disk with id '{disk_id}' not found",
+                "disks": await disk_service.get_disks(),
+                "access_token": token,
+            },
+            status_code=400,
+        )
 
     # Mount disk
     if platform.system() == "Windows":
         mount_cmd = ["mountvol", db_disk.name, db_disk.mountpoint]
     else:
-        mount_cmd = [
-            "sudo",
-            "mount",
-            f"/dev/{db_disk.name}",
-            db_disk.mountpoint,
-            "-o",
-            f"size={db_disk.size}M",
-        ]
+        mount_cmd = ["sudo", "mount", f"/dev/{db_disk.name}", db_disk.mountpoint]
 
     try:
         disk_service.run_shell_command(mount_cmd)
@@ -179,27 +185,46 @@ async def mount_disk(
             "request": request,
             "error": f"Disk with id '{disk_id}' not mounted, err: {err}",
         }
-        return templates.TemplateResponse("error.html", context)
+        return JSONResponse(
+            content={
+                "alert": f"disk {disk_id} was not mounted.\n{err}",
+                "disks": await disk_service.get_disks(),
+                "access_token": token,
+            },
+            status_code=400,
+        )
 
     logger.log(
         f"{datetime.now()} - disk {disk_id} was successfully formatted and mounted"
     )
 
-    return RedirectResponse(url=f"/disks/{disk_id}")
+    return JSONResponse(
+        content={
+            "alert": f"disk {disk_id} was successfully formatted and mounted",
+            "disks": await disk_service.get_disks(),
+            "access_token": token,
+        }
+    )
 
 
 @router.post("/disks/{disk_id}/unmount")
 async def umount_disk(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token=Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token=Depends(auth_service.is_user_authed),
 ):
     logger.log(f"{datetime.now()} - Umount disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
-        context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
-        return templates.TemplateResponse("error.html", context)
+        return JSONResponse(
+            content={
+                "alert": f"Disk with id '{disk_id}' not found",
+                "disks": await disk_service.get_disks(),
+                "access_token": token,
+            },
+            status_code=400,
+        )
 
     if platform.system() == "Windows":
         # Get the drive letter from the mountpoint
@@ -209,9 +234,11 @@ async def umount_disk(
         if drive_letter.upper() not in string.ascii_uppercase:
             context = {
                 "request": request,
-                "error": f"Invalid drive letter for mountpoint {db_disk.mountpoint}",
+                "alert": f"Invalid drive letter for mountpoint {db_disk.mountpoint}",
+                "disks": await disk_service.get_disks(),
+                "access_token": token,
             }
-            return templates.TemplateResponse("error.html", context)
+            return JSONResponse(content=context, status_code=400)
 
         # Unmount the disk
         cmd = ["mountvol", drive_letter + ":", "/p"]
@@ -222,44 +249,64 @@ async def umount_disk(
     try:
         disk_service.run_shell_command(cmd)
     except CommandRun as err:
-        context = {
-            "request": request,
-            "error": f"Disk with id '{disk_id}' not unmounted, err: {err}",
-        }
-        return templates.TemplateResponse("error.html", context)
+        return JSONResponse(
+            content={
+                "alert": f"Disk with id '{disk_id}' not unmounted,\n{err}",
+                "disks": await disk_service.get_disks(),
+                "access_token": token,
+            },
+            status_code=400,
+        )
     logger.log(f"{datetime.now()} - delete disk, disk.id={disk_id}")
     await crud_disk.remove(db=session, id=db_disk.id)
-    logger.log(f"{datetime.now()} - disk deleted")
+    logger.log(f"{datetime.now()} - disk unmounted")
 
-    return RedirectResponse(url=f"/disks/{disk_id}")
+    return JSONResponse(
+        content={
+            "alert": f"Disk with id '{disk_id}' successfully unmounted",
+            "disks": await disk_service.get_disks(),
+            "access_token": token,
+        },
+        status_code=200,
+    )
 
 
 @router.post("/disks/{disk_id}/wipefs")
 async def wipefs_disk(
-        request: Request,
-        disk_id: int,
-        session: AsyncSession = Depends(get_session),
-        token: str = Depends(auth_service.is_user_authed),
+    request: Request,
+    disk_id: int,
+    session: AsyncSession = Depends(get_session),
+    token: str = Depends(auth_service.is_user_authed),
 ):
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
-        context = {"request": request, "error": f"Disk with id '{disk_id}' not found"}
-        return templates.TemplateResponse("error.html", context)
+        return JSONResponse(
+            content={
+                "alert": f"Disk with id '{disk_id}' not found",
+                "disks": await disk_service.get_disks(),
+                "access_token": token,
+            },
+            status_code=400,
+        )
     # Wipe disk header
     cmd = ["sudo", "wipefs", "-a", f"/dev/{db_disk.name}"]
 
     try:
         disk_service.run_shell_command(cmd)
     except CommandRun as err:
-        context = {
-            "request": request,
-            "error": f"Disk with id '{disk_id}' not wiped, err: {err}",
-        }
-        return templates.TemplateResponse("error.html", context)
-
-    context = {
-        "request": request,
-        "disks": await disk_service.get_disks(),
-        "access_token": token,
-    }
-    return templates.TemplateResponse("disks.html", context=context)
+        return JSONResponse(
+            content={
+                "alert": f"Disk with id '{disk_id}' not wiped,\n{err}",
+                "disks": await disk_service.get_disks(),
+                "access_token": token,
+            },
+            status_code=400,
+        )
+    return JSONResponse(
+        content={
+            "alert": f"Disk with id '{disk_id}' was wiped",
+            "disks": await disk_service.get_disks(),
+            "access_token": token,
+        },
+        status_code=200,
+    )
