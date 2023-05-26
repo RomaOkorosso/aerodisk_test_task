@@ -126,7 +126,7 @@ async def format_disk(
     if platform.system() == "Windows":
         format_cmd = ["format", db_disk.name, "/FS:NTFS", "/Q"]
     else:
-        format_cmd = ["sudo", "mkfs.ext4", f"/dev/{db_disk.name}", "-F"]
+        format_cmd = ["sudo", "mkfs.ext4", "-F", f"/dev/{db_disk.name}"]
 
     try:
         disk_service.run_shell_command(format_cmd)
@@ -140,7 +140,6 @@ async def format_disk(
 
     context = {
         "alert": f"disk {disk_id} was formatted",
-        "request": request,
         "access_token": token,
         "disks": await disk_service.get_disks(),
     }
