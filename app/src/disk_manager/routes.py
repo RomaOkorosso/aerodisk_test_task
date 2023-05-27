@@ -1,7 +1,6 @@
 import platform
 import string
 from datetime import datetime
-import sh
 
 from fastapi import APIRouter, Depends, Request
 
@@ -17,13 +16,18 @@ from app.src.disk_manager.service import disk_service
 from app.src.base import get_session
 from app.src.disk_manager.crud import crud_disk
 from app.src.disk_manager.models import Disk
-from app.src.disk_manager.schemas import DiskCreate, DiskUpdate, CommandOutput
+from app.src.disk_manager.schemas import DiskCreate, DiskUpdate
 
 router = APIRouter()
 templates = Jinja2Templates(directory="templates")
 
 
 async def get_access_token_from_cookies(request: Request):
+    """
+    Get access token from request cookies
+    :param request: fastapi.Request
+    :return: access_token
+    """
     return request.cookies.get("access_token")
 
 
@@ -33,17 +37,18 @@ async def get_disks_view(
         token: str = Depends(auth_service.is_user_authed),
         session: AsyncSession = Depends(get_session),
 ):
+    """
+    Return filled with computer and added disks HTML response.
+    :param request: fastapi.Request
+    :param token: str
+    :param session: AsyncSession
+    :return: template filled with disks
+    """
     logger.log(f"{datetime.now()} - Get disks view")
     disks = await crud_disk.get_all(db=session)
     context = {"request": request, "access_token": token, "disks": disks}
     logger.log(f"{datetime.now()} - Context: {context}")
     return templates.TemplateResponse("disks.html", context)
-
-
-@router.get("/disks/test", response_model=CommandOutput)
-async def run_test_command(command: str):
-    output = disk_service.run_shell_command(command)
-    return CommandOutput(output=output)
 
 
 @router.post("/disks/new")
@@ -53,6 +58,14 @@ async def create_disk(
         session: AsyncSession = Depends(get_session),
         token=Depends(auth_service.is_user_authed),
 ):
+    """
+    Receive form for create new disk in DB
+    :param request: fastapi.Request
+    :param disk: schemas.DiskCreate
+    :param session: AsyncSession
+    :param token: str (gets from Depend)
+    :return: JSON with new disk or error message
+    """
     logger.log(f"{datetime.now()} - Create disk: {disk.dict()}")
     db_disk = await crud_disk.get_by_name(session=session, name=disk.name)
 
@@ -77,6 +90,14 @@ async def get_disk_view(
         session: AsyncSession = Depends(get_session),
         token=Depends(auth_service.is_user_authed),
 ):
+    """
+    Get disk by id and return HTML response
+    :param request: fastapi.Request
+    :param disk_id: int
+    :param session: AsyncSession
+    :param token: str
+    :return: template filled with disk or error message
+    """
     logger.log(f"{datetime.now()} - Get disk view with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -94,6 +115,15 @@ async def update_disk(
         session: AsyncSession = Depends(get_session),
         token=Depends(auth_service.is_user_authed),
 ):
+    """
+    Update disk by id and return JSON response
+    :param request: fastapi.Request
+    :param disk_id: int
+    :param disk: schemas.DiskUpdate
+    :param session: AsyncSession
+    :param token: str
+    :return: JSON with updated disk or error message
+    """
     logger.log(f"{datetime.now()} - Update disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -112,7 +142,16 @@ async def format_disk(
         session: AsyncSession = Depends(get_session),
         token=Depends(auth_service.is_user_authed),
 ):
+    """
+    Format disk and return JSON with success or error message
+    :param request: fastapi.Request
+    :param disk_id: int
+    :param session: AsyncSession
+    :param token: str (Gets from Depends)
+    :return: JSON
+    """
     logger.log(f"{datetime.now()} - Format disk with id '{disk_id}'")
+
     db_disk: Disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         context = {
@@ -122,7 +161,8 @@ async def format_disk(
             "disks": await disk_service.get_disks(),
         }
         return JSONResponse(content=context, status_code=400)
-    # Windows disk formatting
+
+    # Windows disk formatting command
     if platform.system() == "Windows":
         format_cmd = ["format", db_disk.name, "/FS:NTFS", "/Q"]
     else:
@@ -143,6 +183,7 @@ async def format_disk(
         "access_token": token,
         "disks": await disk_service.get_disks(),
     }
+
     return JSONResponse(content=context, status_code=200)
 
 
@@ -153,6 +194,14 @@ async def mount_disk(
         session: AsyncSession = Depends(get_session),
         token=Depends(auth_service.is_user_authed),
 ):
+    """
+    Mount disk and return JSON with success or error message
+    :param request: fastapi.Request
+    :param disk_id: int
+    :param session: AsyncSession (gets from Depends)
+    :param token: str (gets from Depends)
+    :return: JSON with success or error message
+    """
     logger.log(f"{datetime.now()} - Mount disk with id '{disk_id}'")
 
     db_disk: Disk = await crud_disk.get(session, disk_id)
@@ -191,12 +240,12 @@ async def mount_disk(
         )
 
     logger.log(
-        f"{datetime.now()} - disk {disk_id} was successfully formatted and mounted"
+        f"{datetime.now()} - disk {disk_id} was successfully mounted"
     )
 
     return JSONResponse(
         content={
-            "alert": f"disk {disk_id} was successfully formatted and mounted",
+            "alert": f"disk {disk_id} was successfully mounted",
             "disks": await disk_service.get_disks(),
             "access_token": token,
         }
@@ -210,6 +259,14 @@ async def umount_disk(
         session: AsyncSession = Depends(get_session),
         token=Depends(auth_service.is_user_authed),
 ):
+    """
+    Unmount disk by id and return JSON
+    :param request: fastapi.Request
+    :param disk_id: int
+    :param session: AsyncSession (gets from Depends)
+    :param token: str (gets from Depends)
+    :return: JSON with success or error message
+    """
     logger.log(f"{datetime.now()} - Umount disk with id '{disk_id}'")
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
@@ -236,10 +293,10 @@ async def umount_disk(
             }
             return JSONResponse(content=context, status_code=400)
 
-        # Unmount the disk
+        # Unmount the disk in Win
         cmd = ["mountvol", drive_letter + ":", "/p"]
     else:
-        # Unmount the disk
+        # Unmount the disk in Linux
         cmd = ["sudo", "umount", "-fl", f"/dev/{db_disk.name}"]
 
     try:
@@ -274,6 +331,15 @@ async def wipefs_disk(
         session: AsyncSession = Depends(get_session),
         token: str = Depends(auth_service.is_user_authed),
 ):
+    """
+    Run wipefs command for selected disk and return JSON
+    :param request: fastapi.Request
+    :param disk_id: int
+    :param session: AsyncSession
+    :param token: str (Get from Depends)
+    :return: JSON with success or error message
+    """
+
     db_disk = await crud_disk.get(session, disk_id)
     if not db_disk:
         return JSONResponse(
@@ -284,7 +350,8 @@ async def wipefs_disk(
             },
             status_code=400,
         )
-    # Wipe disk header
+
+    # Wipe disk headers in Linux (IDK how to it in Win)
     cmd = ["sudo", "wipefs", "-a", f"/dev/{db_disk.name}"]
 
     try:

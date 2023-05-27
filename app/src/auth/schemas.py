@@ -15,7 +15,7 @@ class BaseUser(BaseModel):
 class UserCreate(BaseUser):
     password: str
 
-    @validator("password")
+    @validator("password")  # validate password with regex and return it or raise an error
     def hash_password(cls, v):
         password_pattern = (
             r"^(?:(?:(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]))|(?:(?=.*[a-z])(?=.*[A-Z])(?=.*[*.!@$%^&(){}["

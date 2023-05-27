@@ -2,7 +2,7 @@ import datetime
 import platform
 import subprocess
 import json
-from typing import Union
+from typing import Union, List
 
 from app.src.base import settings
 from app.src.base.exceptions import CommandRun
@@ -10,15 +10,25 @@ from logger import logger
 
 
 class DiskService:
+    """
+    Class for managing Disks
+    """
+
     @staticmethod
-    def run_shell_command(command: Union[str, list[str]]) -> str:
+    def run_shell_command(command: Union[str, List[str]]) -> str:
+        """
+        gets command and run it in shell or cmd and return results
+        :param command: Union[str, List[str]]
+        :return: str - result of running command
+        """
         sudo_password = settings.SUDO_PASSWORD
         logger.log(f"{datetime.datetime.now()} - command: {command}")
 
         if type(command) is str:
-            command: list[str] = command.split(" ")
+            command: List[str] = command.split(" ")
 
         if platform.system() == "Linux":
+            # run command with sudo will be work normally even in .env will be placed right password
             if "sudo" in command:
                 process = subprocess.Popen(
                     command,
@@ -28,7 +38,7 @@ class DiskService:
                     shell=False,
                     text=True,
                 )
-                process.communicate(sudo_password + "\n")
+                process.communicate(sudo_password + "\n")  # enter sudo password
             else:
                 process = subprocess.Popen(
                     command,
@@ -45,6 +55,7 @@ class DiskService:
                 shell=True,
                 text=True,
             )
+
         logger.log(
             f"{datetime.datetime.now()} - {command} returncode: {process.returncode}"
         )
@@ -69,18 +80,26 @@ class DiskService:
         return stdout.strip()
 
     @staticmethod
-    def convert_size_to_mb(size_str: str):
+    def convert_size_to_mb(size_str: str) -> int:
+        """
+        convert size from any to mb, ex: `64G` to `65536`
+        :param size_str: str
+        :return: int
+        """
         size_str = size_str.replace(",", ".")
         size = float(size_str[:-1])
         unit = size_str[-1].upper()
-        if unit == "G":
-            size *= 1024
-        elif unit == "T":
-            size *= 1024 * 1024
+        unit_grid = ["M", "G", "T", "P", "E"]
+        size = float(size) * (1024 * unit_grid.index(unit))  # get position of unit and multiple on it,
+        # ex: 64G -> 64 *  (1024 * 1) => 65536
         return int(size)
 
     @staticmethod
-    def get_win_disks():
+    def get_win_disks() -> List[dict]:
+        """
+        get all Windows mounted disks
+        :return: List[dict]
+        """
         disks = []
         command = "wmic logicaldisk get caption,size,filesystem,volumename"
         output = disk_service.run_shell_command(command)
@@ -90,7 +109,7 @@ class DiskService:
             disks.append(
                 {
                     "name": values[0],
-                    "size": int(values[2]) // 1024,
+                    "size": int(values[2]) // 1024,  # // 1024, bcs in windows size in bytes
                     "filesystem": values[1],
                     "mountpoint": values[3] if len(values) > 3 else "",
                 }
@@ -98,7 +117,11 @@ class DiskService:
         return disks
 
     @staticmethod
-    def get_linux_disks():
+    def get_linux_disks() -> List[dict]:
+        """
+        get all linux mounted disks and return it
+        :return: List[dict]
+        """
         disks = []
         command = "lsblk -J"
         output = disk_service.run_shell_command(command)
@@ -121,7 +144,11 @@ class DiskService:
         return disks
 
     @staticmethod
-    async def get_disks():
+    async def get_disks() -> List[dict]:
+        """
+        analyze system, get disks and return their
+        :return: List[dict]
+        """
         logger.log(f"{datetime.datetime.now()} - Get disks")
         disks = []
         if platform.system() == "Windows":
