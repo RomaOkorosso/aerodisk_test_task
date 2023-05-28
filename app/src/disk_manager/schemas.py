@@ -22,3 +22,7 @@ class Disk(DiskBase):
 
     class Config:
         orm_mode = True
+
+
+class CommandOutput(BaseModel):
+    output: str

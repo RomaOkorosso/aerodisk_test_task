@@ -8,7 +8,12 @@ from app.src.disk_manager.service import disk_service
 from app.src.disk_manager.schemas import DiskCreate
 
 
-async def init(session: AsyncSession):
+async def init(session: AsyncSession) -> None:
+    """
+    For first initial backend service, fill DB with PC mounted disks
+    :param session: AsyncSession
+    :return: None (results will be filled in DB)
+    """
     logger.log("Init disks in db")
     disks = await disk_service.get_disks()
     logger.log(f"Disks got")
@@ -28,8 +33,15 @@ async def init(session: AsyncSession):
 
 
 async def init_disks_in_db():
+    """
+    main func for call init disks in DB
+    :return: None
+    """
     session = await get_session_()
+    logger.log(f"{datetime.datetime.now()} - open connection and fill disks in db")
     try:
         await init(session)
+        logger.log(f"{datetime.datetime.now()} - filling disks to the DB was successful")
     finally:
         await session.close()
+        logger.log(f"{datetime.datetime.now()} - close connection was successful")

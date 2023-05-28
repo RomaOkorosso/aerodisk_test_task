@@ -4,16 +4,16 @@ version = "0.1.0"
 description = ""
 authors = ["RomaOkorosso <zatrutin.roma.work@gmail.com>"]
 readme = "README.md"
-packages = [{include = "aerodisk_test_task"}]
+packages = [{ include = "aerodisk_test_task" }]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.9"
 fastapi = "^0.95.0"
 uvicorn = "^0.21.1"
-pydantic = {extras = ["email"], version = "^1.10.7"}
+pydantic = { extras = ["email"], version = "^1.10.7" }
 black = "^23.3.0"
 sqlalchemy = "^2.0.8"
-passlib = {extras = ["cryptography"], version = "^1.7.4"}
+passlib = { extras = ["cryptography"], version = "^1.7.4" }
 alembic = "^1.10.2"
 pyjwt = "^2.6.0"
 python-dotenv = "^1.0.0"
@@ -22,7 +22,7 @@ asyncpg = "^0.27.0"
 python-multipart = "^0.0.6"
 bcrypt = "^4.0.1"
 python-jose = "^3.3.0"
-gunicorn = {extras = ["uvicorn"], version = "^20.1.0"}
+gunicorn = { extras = ["uvicorn"], version = "^20.1.0" }
 pytest = "^7.3.1"
 psycopg2-binary = "^2.9.6"
 pytest-asyncio = "^0.21.0"
@@ -31,3 +31,10 @@ pytest-asyncio = "^0.21.0"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = "build/|buck-out/|dist/|_build/|.git/|.hg/|.mypy_cache/|.tox/|.venv/|pg_data/"

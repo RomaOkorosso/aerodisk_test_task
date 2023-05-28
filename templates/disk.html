@@ -20,7 +20,11 @@
         <label for="size">Size:</label>
         <input type="text" id="size" name="size" value="{{ disk.size }}">
         <br>
+        <label for="mountpoint">Mountpoint:</label>
+        <input type="text" id="mountpoint" name="mountpoint" value="{{ disk.mountpoint }}">
+        <br>
         <input type="submit" value="Update Disk">
+
     </form>
 </div>
 
@@ -29,12 +33,14 @@
         event.preventDefault();
         const name = document.getElementById("name").value;
         const size = document.getElementById("size").value;
+        const mountpoint = document.getElementById("mountpoint").value;
         diskId = parseInt(diskId);
+        console.log(diskId)
         {#diskId = diskId.toString();#}
-        const body = JSON.stringify({disk_id: diskId, name: name, size: size})
+        const body = JSON.stringify({disk_id: diskId, name: name, size: size, mountpoint: mountpoint})
         console.log(body)
 
-        fetch('/disks/${diskId}/update', {
+        fetch('/disks/'+ diskId + '/update', {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
@@ -44,7 +50,8 @@
         })
             .then(response => {
                 if (response.ok) {
-                    window.location.href = '/disks/${diskId}';
+                    alert("disk was successfully updated");
+                    window.location.href = '/disks/' + diskId;
                 } else {
                     throw new Error("Failed to update disk");
                 }

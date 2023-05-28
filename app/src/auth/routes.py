@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, status, Form
-from fastapi.security import HTTPBasicCredentials, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.requests import Request
-from starlette.responses import RedirectResponse, Response
+from starlette.responses import RedirectResponse
 
 from logger import logger
 from app.src.auth import schemas, service, models, crud
@@ -19,7 +19,13 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 templates = Jinja2Templates(directory="templates")
 
 
-async def get_context(request: Request, session: AsyncSession = Depends(get_session)):
+async def get_context(request: Request, session: AsyncSession = Depends(get_session)) -> dict:
+    """
+    Retun context, that contain: request, access_token, username
+    :param request: fastapi.Request
+    :param session: AsyncSession
+    :return: dict
+    """
     logger.log(f"{datetime.now()} - (auth.routes) Get context for {request.url.path}")
     access_token = await service.auth_service.get_access_token_from_cookie(
         request.cookies.get("access_token")

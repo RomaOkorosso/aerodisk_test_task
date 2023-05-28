@@ -4,6 +4,9 @@ from pydantic import BaseSettings, PostgresDsn, validator
 
 
 class Settings(BaseSettings):
+    """
+    gets all vars and values from .env file
+    """
     POSTGRES_PASSWORD: str
     POSTGRES_USER: str
     POSTGRES_HOST: str
@@ -38,6 +41,10 @@ class Settings(BaseSettings):
 
 @lru_cache()
 def get_settings():
+    """
+    return all var-values from .env
+    :return: Settings
+    """
     return Settings()
 
 

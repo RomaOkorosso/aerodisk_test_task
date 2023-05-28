@@ -30,6 +30,12 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         return res
 
     async def get_by_ids(self, db: AsyncSession, *, ids: list[int]) -> List[ModelType]:
+        """
+        return all Models by ids
+        :param db: AsyncSession
+        :param ids: list[int]
+        :return: list[Model]
+        """
         return (
             (await db.execute(select(self.model).where(self.model.id.in_(ids))))
             .scalars()
@@ -37,11 +43,23 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         )
 
     async def get(self, db: AsyncSession, id: int) -> Optional[ModelType]:
+        """
+        return Model by id
+        :param db: AsyncSession
+        :param id: int
+        :return: Model
+        """
         return (
             await db.execute(select(self.model).where(self.model.id == id))
         ).scalar_one_or_none()
 
     async def create(self, db: AsyncSession, *, obj_in: CreateSchemaType) -> ModelType:
+        """
+        create an object in db
+        :param db: AsyncSession
+        :param obj_in: schema.ModelCreate
+        :return: Model
+        """
         obj_in_data = jsonable_encoder(obj_in)
         db_obj = self.model(**obj_in_data)  # type: ignore
         db.add(db_obj)
@@ -54,8 +72,15 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         db: AsyncSession,
         *,
         db_obj: ModelType,
-        obj_in: Union[UpdateSchemaType, Dict[str, Any]]
+        obj_in: Union[UpdateSchemaType, Dict[str, Any]],
     ) -> ModelType:
+        """
+        update Model in db
+        :param db: AsyncSession
+        :param db_obj: Model
+        :param obj_in: schemas.ModelUpdate
+        :return: Model
+        """
         obj_data = jsonable_encoder(db_obj)
         if isinstance(obj_in, dict):
             update_data = obj_in
@@ -69,8 +94,18 @@ class CRUDBase(Generic[ModelType, CreateSchemaType, UpdateSchemaType]):
         await db.refresh(db_obj)
         return db_obj
 
-    async def remove(self, db: AsyncSession, *, id: int) -> ModelType:
-        obj = (await db.execute(db.query(self.model).get(id))).scalars().first()
+    async def remove(self, db: AsyncSession, *, id: int) -> ModelType or None:
+        """
+        delete Model from db
+        :param db: AsyncSession
+        :param id: int
+        :return: Model
+        """
+        try:
+            obj = (await db.execute(db.query(self.model).get(id))).scalar_one()
+        except Exception as err:
+            print(err)
+            return None
         await db.delete(obj)
         await db.commit()
         return obj
