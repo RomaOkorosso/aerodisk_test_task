@@ -4,6 +4,7 @@ import subprocess
 import json
 from typing import Union, List
 
+
 from app.src.base import settings
 from app.src.base.exceptions import CommandRun
 from logger import logger
@@ -21,6 +22,7 @@ class DiskService:
         :param command: Union[str, List[str]]
         :return: str - result of running command
         """
+      
         sudo_password = settings.SUDO_PASSWORD
         logger.log(f"{datetime.datetime.now()} - command: {command}")
 
